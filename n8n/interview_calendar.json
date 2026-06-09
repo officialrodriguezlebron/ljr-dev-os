@@ -1,0 +1,81 @@
+{
+  "name": "LJR.devOS — Interview Calendar",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "interview-booked",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "id": "d1b2c3d4-0004-0004-0004-000000000001",
+      "name": "Webhook — Interview Booked",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [250, 300],
+      "webhookId": "ljros-interview-booked"
+    },
+    {
+      "parameters": {
+        "calendar": { "__rl": true, "value": "primary", "mode": "list", "cachedResultName": "primary" },
+        "start": "={{ $json.body.interview_date }}",
+        "end": "={{ $json.body.interview_date }}",
+        "additionalFields": {
+          "summary": "=Interview — {{ $json.body.employer }} ({{ $json.body.role }})",
+          "description": "=KYN Score: {{ $json.body.kyn_score }}\nPlatform: {{ $json.body.platform }}\n\nPrepare: proof points, rate anchor, gap responses.",
+          "location": "={{ $json.body.platform || 'Video Call' }}"
+        }
+      },
+      "id": "d1b2c3d4-0004-0004-0004-000000000002",
+      "name": "Create Calendar Event",
+      "type": "n8n-nodes-base.googleCalendar",
+      "typeVersion": 1.1,
+      "position": [450, 300],
+      "credentials": { "googleCalendarOAuth2Api": { "id": "google-calendar-cred", "name": "Google Calendar" } }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": { "__rl": true, "value": "={{ $env.LJROS_SHEETS_ID }}", "mode": "id" },
+        "sheetName": { "__rl": true, "value": "APPLICATIONS", "mode": "name" },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": { "Status": "interview", "Notes": "=Interview scheduled: {{ $('Webhook — Interview Booked').first().json.body.interview_date }}" },
+          "matchingColumns": ["Employer"]
+        },
+        "options": {}
+      },
+      "id": "d1b2c3d4-0004-0004-0004-000000000003",
+      "name": "Update Application Status",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [650, 300],
+      "credentials": { "googleSheetsOAuth2Api": { "id": "google-sheets-cred", "name": "Google Sheets" } }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://api.telegram.org/bot{{ $env.TELEGRAM_TOKEN }}/sendMessage",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"chat_id\": \"{{ $env.OWNER_TELEGRAM_ID }}\",\n  \"text\": \"🎉 Interview booked!\\n\\n*{{ $('Webhook — Interview Booked').first().json.body.employer }}* — {{ $('Webhook — Interview Booked').first().json.body.role }}\\n📅 {{ $('Webhook — Interview Booked').first().json.body.interview_date }}\\n\\nCalendar event created. Prepare your proof points!\",\n  \"parse_mode\": \"Markdown\"\n}"
+      },
+      "id": "d1b2c3d4-0004-0004-0004-000000000004",
+      "name": "Notify Telegram",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [850, 300]
+    }
+  ],
+  "connections": {
+    "Webhook — Interview Booked": { "main": [[{ "node": "Create Calendar Event", "type": "main", "index": 0 }]] },
+    "Create Calendar Event": { "main": [[{ "node": "Update Application Status", "type": "main", "index": 0 }]] },
+    "Update Application Status": { "main": [[{ "node": "Notify Telegram", "type": "main", "index": 0 }]] }
+  },
+  "active": false,
+  "settings": { "executionOrder": "v1" },
+  "versionId": "d1b2c3d4-0004-0004-0004-000000000099",
+  "meta": { "templateCredsSetupCompleted": false },
+  "id": "ljros-interview-calendar",
+  "tags": [{ "id": "tag-001", "name": "ljr-devos" }]
+}

@@ -1,0 +1,94 @@
+{
+  "name": "LJR.devOS — Income Tracker",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "income-paid",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "id": "e1b2c3d4-0005-0005-0005-000000000001",
+      "name": "Webhook — Income Paid",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [250, 300],
+      "webhookId": "ljros-income-paid"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": { "__rl": true, "value": "={{ $env.LJROS_SHEETS_ID }}", "mode": "id" },
+        "sheetName": { "__rl": true, "value": "INCOME", "mode": "name" },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Month": "={{ new Date().toISOString().slice(0,7) }}",
+            "Client": "={{ $json.body.client }}",
+            "Role": "={{ $json.body.role }}",
+            "Amount USD": "={{ $json.body.amount_usd }}",
+            "Status": "paid",
+            "Notes": "={{ $json.body.notes || '' }}"
+          }
+        },
+        "options": {}
+      },
+      "id": "e1b2c3d4-0005-0005-0005-000000000002",
+      "name": "Log to Income Sheet",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [450, 300],
+      "credentials": { "googleSheetsOAuth2Api": { "id": "google-sheets-cred", "name": "Google Sheets" } }
+    },
+    {
+      "parameters": {
+        "operation": "getAllRows",
+        "documentId": { "__rl": true, "value": "={{ $env.LJROS_SHEETS_ID }}", "mode": "id" },
+        "sheetName": { "__rl": true, "value": "INCOME", "mode": "name" },
+        "options": {}
+      },
+      "id": "e1b2c3d4-0005-0005-0005-000000000003",
+      "name": "Read All Income",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [650, 300],
+      "credentials": { "googleSheetsOAuth2Api": { "id": "google-sheets-cred", "name": "Google Sheets" } }
+    },
+    {
+      "parameters": {
+        "jsCode": "const rows = $input.all();\nconst currentMonth = new Date().toISOString().slice(0,7);\nconst monthRows = rows.filter(r => String(r.json.Month).startsWith(currentMonth) && r.json.Status === 'paid');\nconst total = monthRows.reduce((sum, r) => sum + parseFloat(r.json['Amount USD'] || 0), 0);\nconst target = 800;\nconst pct = Math.round(total / target * 100);\nconst bar = '█'.repeat(Math.floor(pct/10)) + '░'.repeat(10 - Math.floor(pct/10));\nreturn [{ json: { total, target, pct, bar, client: $('Webhook — Income Paid').first().json.body.client, amount: $('Webhook — Income Paid').first().json.body.amount_usd } }];"
+      },
+      "id": "e1b2c3d4-0005-0005-0005-000000000004",
+      "name": "Calculate Monthly Total",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [850, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://api.telegram.org/bot{{ $env.TELEGRAM_TOKEN }}/sendMessage",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"chat_id\": \"{{ $env.OWNER_TELEGRAM_ID }}\",\n  \"text\": \"💰 *Income Received!*\\n\\nClient: {{ $json.client }}\\nAmount: ${{ $json.amount }} USD\\n\\n📊 This month: ${{ $json.total }}/${{ $json.target }} ({{ $json.pct }}%)\\n{{ $json.bar }}\\n\\n{{ $json.pct >= 100 ? '🎉 TARGET REACHED!' : `$${$json.target - $json.total} to go` }}\",\n  \"parse_mode\": \"Markdown\"\n}"
+      },
+      "id": "e1b2c3d4-0005-0005-0005-000000000005",
+      "name": "Celebrate on Telegram",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1050, 300]
+    }
+  ],
+  "connections": {
+    "Webhook — Income Paid": { "main": [[{ "node": "Log to Income Sheet", "type": "main", "index": 0 }]] },
+    "Log to Income Sheet": { "main": [[{ "node": "Read All Income", "type": "main", "index": 0 }]] },
+    "Read All Income": { "main": [[{ "node": "Calculate Monthly Total", "type": "main", "index": 0 }]] },
+    "Calculate Monthly Total": { "main": [[{ "node": "Celebrate on Telegram", "type": "main", "index": 0 }]] }
+  },
+  "active": false,
+  "settings": { "executionOrder": "v1" },
+  "versionId": "e1b2c3d4-0005-0005-0005-000000000099",
+  "meta": { "templateCredsSetupCompleted": false },
+  "id": "ljros-income-tracker",
+  "tags": [{ "id": "tag-001", "name": "ljr-devos" }]
+}

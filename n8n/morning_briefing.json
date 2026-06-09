@@ -1,0 +1,112 @@
+{
+  "name": "LJR.devOS — Morning Briefing",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [{ "field": "cronExpression", "expression": "0 23 * * *" }]
+        }
+      },
+      "id": "a1b2c3d4-0001-0001-0001-000000000001",
+      "name": "Trigger 7am PHT",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.1,
+      "position": [250, 300]
+    },
+    {
+      "parameters": {
+        "operation": "getAllRows",
+        "documentId": { "__rl": true, "value": "={{ $env.LJROS_SHEETS_ID }}", "mode": "id" },
+        "sheetName": { "__rl": true, "value": "APPLICATIONS", "mode": "name" },
+        "options": {}
+      },
+      "id": "a1b2c3d4-0001-0001-0001-000000000002",
+      "name": "Read Applications",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [450, 300],
+      "credentials": { "googleSheetsOAuth2Api": { "id": "google-sheets-cred", "name": "Google Sheets" } }
+    },
+    {
+      "parameters": {
+        "operation": "getAllRows",
+        "documentId": { "__rl": true, "value": "={{ $env.LJROS_SHEETS_ID }}", "mode": "id" },
+        "sheetName": { "__rl": true, "value": "PROJECTS", "mode": "name" },
+        "options": {}
+      },
+      "id": "a1b2c3d4-0001-0001-0001-000000000003",
+      "name": "Read Projects",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [450, 460],
+      "credentials": { "googleSheetsOAuth2Api": { "id": "google-sheets-cred", "name": "Google Sheets" } }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "field-001",
+              "name": "briefing_prompt",
+              "value": "=Generate a morning briefing for Lebron Rodriguez.\n\nApplications sent: {{ $('Read Applications').all().length }}\nActive projects: {{ $('Read Projects').all().map(r => r.json.Project).join(', ') }}\nDate: {{ $now.setZone('Asia/Manila').toFormat('dddd, MMMM d') }}\n\nFormat: 2-sentence situation, 3 ranked priorities, one motivational line. Max 150 words.",
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "id": "a1b2c3d4-0001-0001-0001-000000000004",
+      "name": "Build Prompt",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.3,
+      "position": [650, 380]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.groq.com/openai/v1/chat/completions",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Authorization", "value": "=Bearer {{ $env.GROQ_API_KEY }}" },
+            { "name": "Content-Type", "value": "application/json" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"model\": \"llama-3.3-70b-versatile\",\n  \"messages\": [\n    {\"role\": \"system\", \"content\": \"You are Lebron's AI executive assistant.\"},\n    {\"role\": \"user\", \"content\": \"{{ $json.briefing_prompt }}\"}\n  ],\n  \"max_tokens\": 250\n}"
+      },
+      "id": "a1b2c3d4-0001-0001-0001-000000000005",
+      "name": "Call Groq",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [850, 380]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://api.telegram.org/bot{{ $env.TELEGRAM_TOKEN }}/sendMessage",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"chat_id\": \"{{ $env.OWNER_TELEGRAM_ID }}\",\n  \"text\": \"☀️ Morning Brief\\n\\n{{ $json.choices[0].message.content }}\",\n  \"parse_mode\": \"Markdown\"\n}"
+      },
+      "id": "a1b2c3d4-0001-0001-0001-000000000006",
+      "name": "Send to Telegram",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1050, 380]
+    }
+  ],
+  "connections": {
+    "Trigger 7am PHT": { "main": [[{ "node": "Read Applications", "type": "main", "index": 0 }, { "node": "Read Projects", "type": "main", "index": 0 }]] },
+    "Read Applications": { "main": [[{ "node": "Build Prompt", "type": "main", "index": 0 }]] },
+    "Read Projects": { "main": [[{ "node": "Build Prompt", "type": "main", "index": 0 }]] },
+    "Build Prompt": { "main": [[{ "node": "Call Groq", "type": "main", "index": 0 }]] },
+    "Call Groq": { "main": [[{ "node": "Send to Telegram", "type": "main", "index": 0 }]] }
+  },
+  "active": false,
+  "settings": { "executionOrder": "v1" },
+  "versionId": "a1b2c3d4-0001-0001-0001-000000000099",
+  "meta": { "templateCredsSetupCompleted": false },
+  "id": "ljros-morning-briefing",
+  "tags": [{ "createdAt": "2026-06-10", "updatedAt": "2026-06-10", "id": "tag-001", "name": "ljr-devos" }]
+}
