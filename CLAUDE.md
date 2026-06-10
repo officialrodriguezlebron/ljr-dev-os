@@ -127,13 +127,15 @@ agents/supervisor.py       ← Routes to correct agent
 | 22 | n8n/N8N_SETUP.md | ✅ |
 | 23-25 | docs/*.md | ✅ |
 
-## Current Status
+## Current Status — v1.0 (June 11, 2026)
 - **Bot:** Live and polling — token active, owner lock on ID 5135239563
 - **AI:** Groq ✅ Gemini ✅ Claude ❌ (no key) Ollama ✅
 - **Sheets:** Connected — PROFILE (44 rows), SKILLS (45 rows), PROJECTS (5 rows) seeded
-- **Agents:** All 5 read from master_resume.md via core/resume_parser.py
+- **Agents:** All 5 read from master_resume.md via core/resume_parser.py — no hardcoded owner data
 - **plan_agent:** Time-budget enforced — /plan 2h returns exactly ≤108 min of tasks
-- **sheets_client:** Worksheet + header caching — no more 429 rate limit errors
-- **scripts/seed_data.py:** Idempotent seed + row-count verification working
-- **MCPs:** github ✅ context7 ✅ | Google Gmail/Calendar/Drive — run /mcp to authenticate
-- **Next:** Authenticate Google MCPs (/mcp) → test /me /skills /gaps /plan 2h end to end
+- **sheets_client:** Worksheet + header caching — no more 429 rate limit errors; debug prints removed
+- **Code:** Reviewed and cleaned — no bare prints in prod, all silent failures logged, unused imports removed
+- **README:** Complete — setup guide, all 17 commands, architecture diagram
+- **MCPs:** github ✅ context7 ✅ Gmail ✅ Google Calendar ✅
+- **Active lead:** Jordan + Mark @ LazySun — intro call invite in inbox (June 8, unaccepted — reply needed)
+- **Next:** Reply to LazySun invite → track application → /plan 2h → close Meta Ads gap

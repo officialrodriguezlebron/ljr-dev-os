@@ -1,13 +1,10 @@
 import datetime
 import re
-from pathlib import Path
 
 import core.resume_parser as parser
 from core.groq_client import AIClient as GroqClient
 from core.models import Task
 from core.sheets_client import SheetsClient
-
-RESUME_PATH = Path("master_resume.md")
 
 PLAN_PROMPT = """Lebron has exactly {minutes} minutes available ({hours_label}).
 Budget cap: {budget_min} minutes (90% of available — leave buffer).

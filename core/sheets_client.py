@@ -47,12 +47,12 @@ class SheetsClient:
         if tab_name in self._ws_cache:
             return self._ws_cache[tab_name]
         all_ws = sheet.worksheets()
-        print(f"[sheets] Looking for '{tab_name}' in {[ws.title for ws in all_ws]}")
+        logger.debug(f"[sheets] Looking for '{tab_name}' in {[ws.title for ws in all_ws]}")
         for ws in all_ws:
             if ws.title.lower() == tab_name.lower():
                 self._ws_cache[tab_name] = ws
                 return ws
-        print(f"[sheets] Creating missing tab: {tab_name}")
+        logger.info(f"[sheets] Creating missing tab: {tab_name}")
         new_ws = sheet.add_worksheet(title=tab_name, rows=1000, cols=20)
         self._ws_cache[tab_name] = new_ws
         return new_ws
@@ -87,7 +87,7 @@ class SheetsClient:
             headers = list(rows_data[0].keys())
             ws.append_row(headers, value_input_option="USER_ENTERED")
             self._header_cache[tab] = headers
-            print(f"[sheets] Wrote headers to empty tab '{tab}': {headers}")
+            logger.info(f"[sheets] Wrote headers to empty tab '{tab}': {headers}")
         rows = [[str(r.get(h, "")) for h in headers] for r in rows_data]
         ws.append_rows(rows, value_input_option="USER_ENTERED")
         logger.debug(f"Batch appended {len(rows)} rows to {tab}")
@@ -101,7 +101,7 @@ class SheetsClient:
         updates: dict[str, Any],
     ) -> bool:
         ws = self._tab(tab)
-        headers = ws.row_values(1)
+        headers = self._headers(tab)
         if match_col not in headers:
             logger.error(f"Column '{match_col}' not in {tab}")
             return False

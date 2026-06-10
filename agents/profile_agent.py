@@ -31,6 +31,10 @@ class ProfileAgent:
         except Exception:
             income_current = "₱0"
 
+        goals = parser.get_goals()
+        school_raw = identity.get("School", "FEU-IT — BS CS")
+        income_target = goals.get("Monthly Target", "$800/month")
+
         top_skills = [
             f"{name} ({level})"
             for name, level in skills.items()
@@ -44,9 +48,9 @@ class ProfileAgent:
 
         return Profile(
             name=identity.get("Full Name", "Lebron James DG. Rodriguez"),
-            school="FEU-IT — BS CS, Dean's List",
+            school=school_raw,
             income_current=income_current,
-            income_target="$800/month",
+            income_target=income_target,
             top_skills=top_skills,
             proof_points=proof_points,
             gaps=[g["name"] for g in gaps[:3]],

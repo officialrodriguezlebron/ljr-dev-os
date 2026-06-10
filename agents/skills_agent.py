@@ -1,3 +1,5 @@
+import re
+
 import core.resume_parser as parser
 from core.groq_client import AIClient as GroqClient
 from core.models import SkillGap
@@ -55,7 +57,7 @@ class SkillsAgent:
         result = []
         for g in raw:
             demand_str = g.get("market_demand", "0%")
-            pct_m = __import__("re").search(r"(\d+)%", demand_str)
+            pct_m = re.search(r"(\d+)%", demand_str)
             freq = int(pct_m.group(1)) if pct_m else 0
             result.append(SkillGap(
                 name=g["name"],

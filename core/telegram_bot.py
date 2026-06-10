@@ -33,6 +33,10 @@ logger.info("=" * 60)
 def owner_only(func):
     async def wrapper(update: Update, context: ContextTypes.DEFAULT_TYPE):
         if OWNER_ID and update.effective_user.id != OWNER_ID:
+            logger.warning(
+                f"Unauthorized access attempt: user_id={update.effective_user.id} "
+                f"username=@{update.effective_user.username}"
+            )
             await update.message.reply_text("❌ Unauthorized.")
             return
         await func(update, context)
@@ -62,15 +66,19 @@ async def handle_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
 @owner_only
 async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     text = update.message.text.strip()
-    if len(text) > 100:
-        # Long text = assume it's a job post for KYN
-        await update.message.chat.send_action("typing")
-        response = await supervisor.route("kyn", text)
-        await update.message.reply_text(response, parse_mode="Markdown")
-    else:
-        await update.message.reply_text(
-            "Send a command or paste a job post for instant KYN scoring.\n/help for all commands."
-        )
+    try:
+        if len(text) > 100:
+            # Long text = assume it's a job post for KYN
+            await update.message.chat.send_action("typing")
+            response = await supervisor.route("kyn", text)
+            await update.message.reply_text(response, parse_mode="Markdown")
+        else:
+            await update.message.reply_text(
+                "Send a command or paste a job post for instant KYN scoring.\n/help for all commands."
+            )
+    except Exception as e:
+        logger.error(f"handle_text error: {e}", exc_info=True)
+        await update.message.reply_text("❌ Something went wrong. Check logs.")
 
 
 def build_app() -> Application:

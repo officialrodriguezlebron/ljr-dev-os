@@ -1,8 +1,12 @@
 import datetime
+import logging
 
+import core.resume_parser as parser
 from core.groq_client import AIClient as GroqClient
 from core.models import LearningPath
 from core.sheets_client import SheetsClient
+
+logger = logging.getLogger(__name__)
 
 SYSTEM_PROMPT = """You are Lebron's learning coach.
 You create practical, project-based learning paths that result
@@ -26,7 +30,7 @@ End with a portfolio piece that showcases all skills learned."""
 PATH_PROMPT = """Create a learning path for: {skill}
 
 Lebron's context:
-- Shopify Advanced, React/Next.js Intermediate, Python Intermediate
+- {skill_context}
 - Learns by building, not watching
 - Target: portfolio-ready proof within 2-3 weeks
 
@@ -42,9 +46,15 @@ class LearnAgent:
         self.groq = groq
 
     async def create_learning_path(self, skill: str) -> LearningPath:
+        try:
+            skills = parser.get_skills()
+            top = [f"{k} ({v})" for k, v in skills.items() if v in ("Advanced", "Intermediate")][:4]
+            skill_context = ", ".join(top) if top else "Shopify Advanced, React/Next.js Intermediate"
+        except Exception:
+            skill_context = "Shopify Advanced, React/Next.js Intermediate, Python Intermediate"
         raw = await self.groq.chat(
             SYSTEM_PROMPT,
-            PATH_PROMPT.format(skill=skill),
+            PATH_PROMPT.format(skill=skill, skill_context=skill_context),
             max_tokens=400,
         )
         return self._parse_path(skill, raw)
@@ -68,17 +78,21 @@ class LearnAgent:
         return f"🗺️ *{weeks}-Week Learning Roadmap*\n\n{raw}"
 
     def log_progress(self, skill: str, notes: str) -> None:
-        self.sheets.append_row(
-            "LEARNING",
-            {
-                "Date": datetime.date.today().isoformat(),
-                "Skill": skill,
-                "Resource": "",
-                "Time (min)": "",
-                "Notes": notes,
-                "Completed": "No",
-            },
-        )
+        try:
+            self.sheets.append_row(
+                "LEARNING",
+                {
+                    "Date": datetime.date.today().isoformat(),
+                    "Skill": skill,
+                    "Resource": "",
+                    "Time (min)": "",
+                    "Notes": notes,
+                    "Completed": "No",
+                },
+            )
+        except Exception as e:
+            logger.error(f"Failed to log progress for '{skill}': {e}")
+            raise RuntimeError(f"Could not save learning log: {e}") from e
 
     def get_log(self) -> str:
         try:
