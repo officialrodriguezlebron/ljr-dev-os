@@ -1,100 +1,136 @@
-# LJR.devOS — Personal AI Operating System
+# LJR.devOS — Agent Memory
 
-## Identity
+## System Identity
 - **Owner:** Lebron James DG. Rodriguez
-- **What:** Unified personal OS — career intelligence, skills tracking, project hub, daily planning
-- **Repo:** github.com/officialrodriguezlebron/ljr-dev-os (THIS repo)
-- **Related repo:** github.com/officialrodriguezlebron/tempo (CareerOS lives here)
-- **Stack:** Next.js 14 + Tailwind CSS (static site on Vercel)
-- **Data sources:** IDENTITY.md, projects.md, goals.md (all in this repo, parsed at build time)
-- **Automation:** n8n workflows, iPhone Shortcuts, Telegram bot (all in tempo repo)
+- **What:** Personal AI operating system — career intelligence, skills tracking, daily planning
+- **Primary interface:** Telegram bot
+- **AI runtime:** Groq → Gemini → Claude → Ollama (priority fallback chain)
+- **Data layer:** Google Sheets (LJR.devOS Master workbook)
+- **Automation:** n8n (self-hosted, Windows)
+- **Frontend:** Next.js 16 static site (Vercel) — separate concern
+
+## Repos
+- `ljr-dev-os` — THIS REPO (Next.js portfolio + Python agent system)
+- `tempo` — CareerOS v3 bot (separate, older system)
 
 ## Architecture
 
 ```
-ljr-dev-os/                    ← THIS REPO (portfolio + planning)
-├── app/                       ← Next.js pages
-│   └── page.tsx               ← Portfolio home page
-├── components/portfolio/      ← UI components
-├── lib/                       ← Parsers (read markdown at build time)
-│   ├── parse-identity.ts
-│   ├── parse-projects.ts
-│   └── types.ts
-├── IDENTITY.md                ← Single source of truth: who Lebron is
-├── projects.md                ← All projects with proof points
-├── goals.md                   ← Current goals + weekly tasks
-├── CLAUDE.md                  ← This file
-├── .claude/agents/            ← Agent role definitions
-└── .claude/commands/          ← Slash commands
-
-tempo/                         ← SEPARATE REPO (CareerOS bot + automation)
-├── careeros/bot/              ← Telegram bot (v3, 14+ commands)
-├── careeros/lib/              ← profile_reader, skills_brain
-├── careeros/master_resume.md  ← Resume data (stays here)
-├── careeros/n8n/              ← n8n workflow JSONs
-└── careeros/data/             ← Runtime data (gitignored)
+iPhone / Telegram
+       ↓
+core/telegram_bot.py       ← Receives all commands
+       ↓
+agents/supervisor.py       ← Routes to correct agent
+       ↓
+┌──────────────────────────────────────────┐
+│           Specialized Agents             │
+├─────────────────┬────────────────────────┤
+│ career_agent.py │ KYN scoring, cover ltrs│
+│ skills_agent.py │ gaps, learning paths   │
+│ profile_agent.py│ /me, profile data      │
+│ plan_agent.py   │ /plan, /next, /morning │
+│ learn_agent.py  │ /learn, /roadmap, /log │
+└─────────────────┴────────────────────────┘
+       ↓
+┌──────────────────────────────────────────┐
+│           Core Layer                     │
+├─────────────────┬────────────────────────┤
+│ kyn_engine.py   │ Pure logic KYN scorer  │
+│ groq_client.py  │ AI with fallbacks      │
+│ sheets_client.py│ All Google Sheets ops  │
+│ models.py       │ Typed dataclasses      │
+└─────────────────┴────────────────────────┘
+       ↓
+┌──────────────────────────────────────────┐
+│         Google Sheets (Data Layer)       │
+│ PROFILE · SKILLS · PROJECTS             │
+│ APPLICATIONS · LEARNING LOG             │
+│ INCOME · DAILY LOG                      │
+└──────────────────────────────────────────┘
+       ↓
+┌──────────────────────────────────────────┐
+│         n8n (Automation Layer)           │
+│ Morning Briefing  · Follow-up Reminders  │
+│ Skills Extractor  · Interview Calendar   │
+│ Income Tracker                           │
+└──────────────────────────────────────────┘
 ```
 
-## Rules (Non-negotiable)
+## Owner Profile (Quick Ref)
+- FEU-IT BS CS, Dean's List, thesis passed Mar 7 2026
+- Top skills: Shopify Advanced, TikTok Shop Advanced, CRO Advanced
+- Income target: $800/month | Current: ₱0
+- Active projects: RutaSmart, CareerOS, LuxeWear, LJR.devOS
+- Target roles: Remote Shopify Dev, eCommerce specialist
 
-### Git
-- Conventional commits: feat:, fix:, docs:, chore:, refactor:, test:
-- Push after every commit
-- Feature branches for new modules: feat/portfolio, feat/planner
+## Agent Responsibilities
 
-### Code
-- TypeScript strict mode — no `any` types
-- Tailwind CSS only — no custom CSS files unless absolutely necessary
-- Static site — NO Supabase, NO runtime API calls, NO client-side fetching
-- Data parsed from markdown at build time via getStaticProps or generateStaticParams
-- Component naming: PascalCase
-- File naming: kebab-case
+| Agent | Handles | Tools Used |
+|-------|---------|------------|
+| supervisor | All routing | All agents |
+| career_agent | /kyn /analyze /apply /followup | kyn_engine, groq, sheets |
+| skills_agent | /gaps /skills | sheets, groq |
+| profile_agent | /me /projects | sheets, master_resume |
+| plan_agent | /plan /next /morning | sheets, groq |
+| learn_agent | /learn /roadmap /log | sheets, groq |
 
-### Design System
-- Dark mode: bg-gray-950 body, bg-gray-900 cards
-- Text: text-gray-100 primary, text-gray-400 secondary
-- Accent: emerald-500 (links, badges, hover states)
-- Font: system (font-sans), font-mono for code/tags
-- No shadows deeper than shadow-sm
-- No border-radius larger than rounded-lg
-- No gradients, no heavy animations
-- Mobile-first: max-w-5xl container, px-4 on mobile
+## Rules (Non-Negotiable)
 
-### Agent Team Rules
-- Each agent owns specific files — no shared editing
-- QA must verify build passes before approving
-- Max 3-5 agents per team
-- Always shut down agents cleanly
+### AI Provider Rules
+- **Default:** Groq (`llama-3.3-70b-versatile`) — fastest, 14,400 req/day free
+- **Long outputs (cover letters, roadmaps):** Gemini 2.0 Flash — use `prefer="gemini"`
+- **KYN score ≥ 70 final polish:** Claude Sonnet 4.6 — use `prefer="claude"` only if ANTHROPIC_API_KEY set
+- **Last resort / offline:** Ollama `deepseek-r1:8b` — auto-fallback, no config needed
+- Always use `ai.chat(system, user, prefer="groq")` — the chain handles fallbacks automatically
+- Never hardcode model names in agent files — they live in `AIClient` class vars
+- Check `ai.get_status()` for current provider availability
+
+### Build Rules
+- Auto-approve all file writes
+- Prefer automation (n8n) over custom code
+- Prefer Sheets over databases
+- Never hardcode owner data — read from master_resume.md
+- All agents read master_resume.md on init
+
+### Code Rules
+- Python 3.11+, async/await throughout
+- Type hints on all functions
+- No silent failures — log and re-raise
+- `.env` for all credentials, never in code
+- Run from repo root: `python -m core.telegram_bot`
+
+### Git Rules
+- Conventional commits: feat:, fix:, chore:, docs:
+- Push after every working feature
 
 ## Build Order
 
-| # | Module | Status | Branch |
-|---|--------|--------|--------|
-| 1 | Foundation (IDENTITY + goals + projects + agents) | ✅ Done | main |
-| 2 | Portfolio Site (static, employer-facing) | 🔨 Next | feat/portfolio |
-| 3 | n8n Workflows (morning brief, weekly, job alerts) | ⏳ Queued | — (in tempo repo) |
-| 4 | AI Planner page | ⏳ Queued | feat/planner |
-
-## Key Files
-
-| File | Purpose | Editable? |
-|------|---------|-----------|
-| IDENTITY.md | Who Lebron is — skills, experience, proof points | Yes (update as career grows) |
-| projects.md | All projects with status and proof | Yes (add new projects) |
-| goals.md | Current month/week goals | Yes (update weekly) |
-| CLAUDE.md | This file — system context | Yes (update after each session) |
-| lib/parse-identity.ts | Parses IDENTITY.md into typed objects | Rarely |
-| lib/parse-projects.ts | Parses projects.md into typed objects | Rarely |
+| # | File | Status |
+|---|------|--------|
+| 1 | CLAUDE.md | ✅ |
+| 2 | master_resume.md | ✅ |
+| 3 | .env | ✅ |
+| 4 | requirements.txt | ✅ |
+| 5 | core/models.py | ✅ |
+| 6 | core/kyn_engine.py | ✅ |
+| 7 | core/groq_client.py (AIClient, 4 providers) | ✅ |
+| 8 | core/sheets_client.py | ✅ |
+| 9 | agents/profile_agent.py | ✅ |
+| 10 | agents/skills_agent.py | ✅ |
+| 11 | agents/career_agent.py | ✅ |
+| 12 | agents/learn_agent.py | ✅ |
+| 13 | agents/plan_agent.py | ✅ |
+| 14 | agents/supervisor.py | ✅ |
+| 15 | core/telegram_bot.py | ✅ |
+| 16 | start.bat | ✅ |
+| 17-21 | n8n/*.json (5 workflows) | ✅ |
+| 22 | n8n/N8N_SETUP.md | ✅ |
+| 23-25 | docs/*.md | ✅ |
 
 ## Current Status
-- Foundation: ✅ Slash commands, goals, projects created
-- Portfolio: Not started
-- Still needed: IDENTITY.md content, agent definitions, CLAUDE.md
-- Next: Complete setup (steps 1-3), then build portfolio (Prompt 2)
-
-## @references
-- See IDENTITY.md for full profile, skills, proof points
-- See projects.md for project data
-- See goals.md for current priorities
-- See .claude/agents/ for team role definitions
-- See .claude/commands/ for reusable slash commands
+- Foundation: Complete
+- Python agents: Complete (AIClient with 4 providers)
+- n8n workflows: Complete
+- Docs: Complete
+- .env: Filled — GROQ + GOOGLE_API_KEY active, TELEGRAM_TOKEN pending (revoke old, get new from @BotFather)
+- Next: Fill TELEGRAM_TOKEN → run start.bat → test /me and /analyze end to end

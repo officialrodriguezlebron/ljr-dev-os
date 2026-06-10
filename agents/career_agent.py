@@ -1,7 +1,8 @@
 import datetime
 from pathlib import Path
 
-from core.groq_client import GroqClient
+import core.resume_parser as parser
+from core.groq_client import AIClient as GroqClient
 from core.kyn_engine import KYNEngine
 from core.models import ApplicationPackage, KYNResult
 from core.sheets_client import SheetsClient
@@ -16,7 +17,7 @@ that lead with proof, anchor rates, and address gaps honestly.
 
 Rules:
 - Lead with one specific proof point (number + outcome)
-- Anchor rate at $7-10/hr for Shopify, $5-7/hr for eCommerce VA
+- Anchor rate at $8-10/hr for Shopify, $7-10/hr for general dev, $5-7/hr for eCommerce VA
 - Never say "I am a quick learner" — show learning via proof
 - Address gaps head-on: "I'm currently building X, 2-week ramp"
 - Max 3 short paragraphs — no walls of text
@@ -56,13 +57,23 @@ class CareerAgent:
     async def analyze_job(self, post: str) -> ApplicationPackage:
         kyn_result = self.kyn.score(post)
 
+        # Dynamic proof points from master_resume.md
+        proof_raw = parser.get_proof_points()
         proof_points = [
-            "LuxeWear: 95 Lighthouse, 100 SEO, 12 CRO features — zero base theme",
-            "Unicharm: TikTok Shop ops, 500+ concurrent viewers, 30% sales lift",
-            "VXI: 93.88% CSAT, 80-100 tickets/day, 120% quota exceeded",
-            "RutaSmart: React 18 + FastAPI thesis, defense passed Mar 7 2026",
-            "CareerOS: 14+ Telegram commands, KYN engine, Sheets pipeline",
+            f"{p['title'].split('—')[0].strip()}: {p['result']}"
+            for p in proof_raw
         ]
+
+        # Dynamic rate anchor based on job type
+        post_lower = post.lower()
+        if "shopify" in post_lower:
+            rate_anchor_default = parser.get_rate_anchor("shopify")
+        elif "ai va" in post_lower or "ai operator" in post_lower:
+            rate_anchor_default = parser.get_rate_anchor("ai va")
+        elif "tiktok" in post_lower:
+            rate_anchor_default = parser.get_rate_anchor("tiktok")
+        else:
+            rate_anchor_default = parser.get_rate_anchor("ecommerce va")
 
         prompt = COVER_LETTER_PROMPT.format(
             resume=self._resume[:2000],
@@ -79,7 +90,7 @@ class CareerAgent:
 
         subject = ""
         message_lines = []
-        rate_anchor = "$7-10/hr depending on scope"
+        rate_anchor = rate_anchor_default
         in_body = False
 
         for line in lines:
@@ -113,18 +124,16 @@ class CareerAgent:
             apps = self.sheets.read_tab("APPLICATIONS")
         except Exception:
             return []
-
         today = datetime.date.today()
         due = []
         for row in apps:
             if str(row.get("Replied", "")).lower() == "yes":
                 continue
-            follow_up_date = str(row.get("Follow-up Date", "")).strip()
-            if not follow_up_date:
+            fu_date = str(row.get("Follow-up Date", "")).strip()
+            if not fu_date:
                 continue
             try:
-                due_date = datetime.date.fromisoformat(follow_up_date)
-                if due_date <= today:
+                if datetime.date.fromisoformat(fu_date) <= today:
                     due.append(row)
             except ValueError:
                 continue
@@ -133,8 +142,8 @@ class CareerAgent:
     def format_followups_telegram(self) -> str:
         due = self.check_followups()
         if not due:
-            return "✅ No follow-ups due today."
-        lines = [f"📬 *{len(due)} follow-up(s) due:*\n"]
+            return "No follow-ups due today."
+        lines = [f"*{len(due)} follow-up(s) due:*\n"]
         for row in due:
             lines.append(
                 f"• *{row.get('Employer', '?')}* — {row.get('Role', '?')} "
@@ -147,17 +156,15 @@ class CareerAgent:
             apps = self.sheets.read_tab("APPLICATIONS")
         except Exception:
             return "Could not read Applications sheet."
-
         total = len(apps)
         applied = sum(1 for r in apps if str(r.get("Status", "")).lower() == "applied")
         replied = sum(1 for r in apps if str(r.get("Replied", "")).lower() == "yes")
         offers = sum(1 for r in apps if str(r.get("Offer", "")).strip())
         rate = (replied / total * 100) if total > 0 else 0
-
         return (
-            f"📊 *Application Stats*\n\n"
+            f"*Application Stats*\n\n"
             f"Total sent: {total}\n"
             f"Active applications: {applied}\n"
             f"Replies received: {replied} ({rate:.0f}%)\n"
-            f"Offers: {offers}\n"
+            f"Offers: {offers}"
         )

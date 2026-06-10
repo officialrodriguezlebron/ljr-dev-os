@@ -1,0 +1,46 @@
+Skill,Level,Gap,Frequency,Priority,Resource,Completed,Category,Notes
+Shopify Theme Development,Advanced,No,0,No,,Yes,Technical - Shopify,Core skill - LuxeWear proof
+Liquid Templating,Advanced,No,0,No,,Yes,Technical - Shopify,18 sections 8 snippets built
+HTML5 / CSS3,Advanced,No,0,No,,Yes,Technical - Frontend,Daily use
+JavaScript (Vanilla),Advanced,No,0,No,,Yes,Technical - Frontend,No frameworks for Shopify
+Conversion Rate Optimization,Advanced,No,0,No,,Yes,Technical - Shopify,12 CRO features on LuxeWear
+UI/UX Development,Advanced,No,0,No,,Yes,Technical - Frontend,LuxeWear design system
+Performance Optimization,Advanced,No,0,No,,Yes,Technical - Shopify,95 Lighthouse score
+Mobile-First Development,Advanced,No,0,No,,Yes,Technical - Frontend,Core Web Vitals excellent
+Basic SEO,Advanced,No,0,No,,Yes,Technical - Shopify,100 SEO score on LuxeWear
+React 18,Intermediate,No,0,No,,Yes,Technical - Dev,Used in RutaSmart thesis
+Next.js 14,Intermediate,No,0,No,,Yes,Technical - Dev,App Router - Tempo/CareerOS
+TypeScript,Intermediate,No,0,No,,Yes,Technical - Dev,Used in Tempo repo
+Python 3.13,Intermediate,No,0,No,,Yes,Technical - Dev,FastAPI + CareerOS bot
+FastAPI,Intermediate,No,0,No,,Yes,Technical - Dev,RutaSmart backend
+PostgreSQL 15,Intermediate,No,0,No,,Yes,Technical - Dev,RutaSmart + Supabase
+Git / GitHub,Intermediate,No,0,No,,Yes,Technical - Dev,Daily use
+REST APIs,Intermediate,No,0,No,,Yes,Technical - Dev,Multiple projects
+Vite / PWA,Intermediate,No,0,No,,Yes,Technical - Dev,RutaSmart frontend
+Vercel / Railway,Intermediate,No,0,No,,Yes,Technical - Dev,RutaSmart deployment
+Claude (Anthropic),Advanced,No,0,No,,Yes,AI Tools,Daily use - primary AI
+ChatGPT (OpenAI),Advanced,No,0,No,,Yes,AI Tools,Daily use - research + content
+Cursor,Intermediate,No,0,No,,Yes,AI Tools,AI-assisted coding
+Midjourney,Intermediate,No,0,No,,Yes,AI Tools,Image generation + mood boarding
+HeyGen,Experienced,No,0,No,,Yes,AI Tools,AI avatar video creation
+Synthesia,Experienced,No,0,No,,Yes,AI Tools,AI avatar video creation
+n8n,Beginner,No,0,No,n8n Academy (free),No,AI Tools,Building CareerOS automation
+Zapier,Intermediate,No,0,No,,Yes,AI Tools,Trigger-action flows
+Groq API,Intermediate,No,0,No,,Yes,AI Tools,CareerOS AI backend
+Ollama,Intermediate,No,0,No,,Yes,AI Tools,Local AI - DeepSeek-R1
+TikTok Shop Seller Center,Advanced,No,0,No,,Yes,E-Commerce Ops,Unicharm - product uploads syncing compliance
+Shopee Operations,Advanced,No,0,No,,Yes,E-Commerce Ops,Unicharm - listings inventory
+Facebook Live Selling,Advanced,No,0,No,,Yes,E-Commerce Ops,500+ viewers 30% sales lift
+Chat / Email Support,Advanced,No,0,No,,Yes,Customer Service,VXI - 93.88% CSAT 80-100 tickets/day
+CRM Software,Intermediate,No,0,No,,Yes,Customer Service,HubSpot + VXI ticketing system
+Outbound Sales,Advanced,No,0,No,,Yes,Sales,VXI - exceeded quota 120%
+Google Workspace,Advanced,No,0,No,,Yes,Tools,Sheets Drive Gmail Calendar
+Canva,Intermediate,No,0,No,,Yes,Tools,Graphics + basic video
+Notion / Asana,Intermediate,No,0,No,,Yes,Tools,Project management
+Meta Ads Manager,Gap,Yes,0,Yes,Meta Blueprint (free blueprint.facebook.com),No,GAP,40% of target jobs require this
+GoHighLevel (GHL),Gap,Yes,0,Yes,GHL Free Trial - 14 days gohighlevel.com,No,GAP,30% of target jobs require this
+Printful / POD,Gap,Yes,0,No,Printful Docs printful.com/docs,No,GAP,20% of target jobs - POD integration
+Video Editing (CapCut),Gap,Yes,0,No,CapCut tutorials YouTube,No,GAP,15% of target jobs - content repurposing
+WordPress / PHP,Gap,Yes,0,No,WP beginner course,No,GAP,15% of target jobs - not priority
+Reamaze / Gorgias,Gap,Yes,0,No,Platform docs,No,GAP,10% of target jobs - CS helpdesk
+Recharge (subscriptions),Gap,Yes,0,No,Recharge docs rechargeapments.com,No,GAP,10% of target jobs - subscription apps

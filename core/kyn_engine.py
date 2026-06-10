@@ -2,17 +2,36 @@ import re
 from typing import Optional
 from core.models import KYNResult
 
+# Derived from skills_data.csv (Gap=No rows only) — update when skills_data.csv changes
 LEBRON_SKILLS = {
-    "shopify", "liquid", "html", "css", "javascript", "js",
+    # Technical — Shopify & Frontend
+    "shopify", "shopify theme", "liquid", "liquid templating",
+    "html", "html5", "css", "css3",
+    "javascript", "js", "vanilla javascript",
+    "cro", "conversion rate optimization", "conversion rate",
+    "ui/ux", "ux", "performance optimization", "lighthouse",
+    "mobile-first", "mobile first", "seo", "basic seo",
+    "section schemas", "metafields",
+    # Technical — Development
+    "react", "react 18", "next.js", "nextjs",
+    "typescript", "python", "fastapi",
+    "postgresql", "postgres", "git", "github",
+    "rest api", "rest apis", "api integration",
+    "vite", "pwa", "vercel", "railway",
+    # AI Tools
+    "claude", "chatgpt", "cursor", "midjourney",
+    "heygen", "synthesia", "n8n", "zapier",
+    "groq", "ollama",
+    # E-Commerce Operations
     "tiktok shop", "tiktok", "shopee", "facebook live", "fb live",
-    "claude", "chatgpt", "cursor", "midjourney", "ai",
-    "n8n", "zapier", "heygen", "synthesia",
-    "react", "next.js", "nextjs", "python", "fastapi",
-    "postgresql", "postgres", "git", "github", "canva",
-    "customer service", "seo", "cro", "conversion",
-    "google analytics", "google workspace", "google sheets",
-    "ecommerce", "e-commerce", "dropshipping", "print on demand",
-    "typescript", "tailwind", "vercel",
+    "ecommerce", "e-commerce", "live selling", "live commerce",
+    "product listings", "seller center",
+    # Customer Service & Sales
+    "customer service", "chat support", "email support",
+    "crm", "hubspot", "outbound sales", "sales",
+    # Tools
+    "google workspace", "google sheets", "google drive", "canva",
+    "notion", "asana",
 }
 
 PAKWAN_PHRASES = [
