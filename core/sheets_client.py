@@ -29,6 +29,8 @@ class SheetsClient:
     def __init__(self) -> None:
         self._gc: gspread.Client | None = None
         self._sheet: gspread.Spreadsheet | None = None
+        self._ws_cache: dict[str, gspread.Worksheet] = {}
+        self._header_cache: dict[str, list[str]] = {}
         self.sheets_id = os.getenv("LJROS_SHEETS_ID", "")
         self.creds_path = os.getenv("GOOGLE_CREDENTIALS_PATH", "google-credentials.json")
 
@@ -41,7 +43,25 @@ class SheetsClient:
 
     def _tab(self, tab: str) -> gspread.Worksheet:
         sheet = self._connect()
-        return sheet.worksheet(TABS.get(tab, tab))
+        tab_name = TABS.get(tab, tab)
+        if tab_name in self._ws_cache:
+            return self._ws_cache[tab_name]
+        all_ws = sheet.worksheets()
+        print(f"[sheets] Looking for '{tab_name}' in {[ws.title for ws in all_ws]}")
+        for ws in all_ws:
+            if ws.title.lower() == tab_name.lower():
+                self._ws_cache[tab_name] = ws
+                return ws
+        print(f"[sheets] Creating missing tab: {tab_name}")
+        new_ws = sheet.add_worksheet(title=tab_name, rows=1000, cols=20)
+        self._ws_cache[tab_name] = new_ws
+        return new_ws
+
+    def _headers(self, tab: str) -> list[str]:
+        if tab not in self._header_cache:
+            ws = self._tab(tab)
+            self._header_cache[tab] = ws.row_values(1)
+        return self._header_cache[tab]
 
     def read_tab(self, tab: str) -> list[dict[str, Any]]:
         ws = self._tab(tab)
@@ -51,10 +71,27 @@ class SheetsClient:
 
     def append_row(self, tab: str, data: dict[str, Any]) -> None:
         ws = self._tab(tab)
-        headers = ws.row_values(1)
+        headers = self._headers(tab)
         row = [str(data.get(h, "")) for h in headers]
         ws.append_row(row, value_input_option="USER_ENTERED")
         logger.debug(f"Appended row to {tab}")
+
+    def batch_append_rows(self, tab: str, rows_data: list[dict[str, Any]]) -> int:
+        """Append multiple rows in a single API call. Use this for bulk imports."""
+        if not rows_data:
+            return 0
+        ws = self._tab(tab)
+        headers = self._headers(tab)
+        if not headers:
+            # Tab is empty — write the header row first
+            headers = list(rows_data[0].keys())
+            ws.append_row(headers, value_input_option="USER_ENTERED")
+            self._header_cache[tab] = headers
+            print(f"[sheets] Wrote headers to empty tab '{tab}': {headers}")
+        rows = [[str(r.get(h, "")) for h in headers] for r in rows_data]
+        ws.append_rows(rows, value_input_option="USER_ENTERED")
+        logger.debug(f"Batch appended {len(rows)} rows to {tab}")
+        return len(rows)
 
     def update_row(
         self,

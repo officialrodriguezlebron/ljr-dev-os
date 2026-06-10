@@ -5,7 +5,7 @@ from agents.learn_agent import LearnAgent
 from agents.plan_agent import PlanAgent
 from agents.profile_agent import ProfileAgent
 from agents.skills_agent import SkillsAgent
-from core.groq_client import GroqClient
+from core.groq_client import AIClient
 from core.sheets_client import SheetsClient
 
 logger = logging.getLogger(__name__)
@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 class SupervisorAgent:
     def __init__(self) -> None:
         sheets = SheetsClient()
-        groq = GroqClient()
+        groq = AIClient()
 
         self.career = CareerAgent(sheets, groq)
         self.skills = SkillsAgent(sheets, groq)
@@ -129,10 +129,7 @@ class SupervisorAgent:
 
         # Planning commands
         if command == "plan":
-            try:
-                hours = float(args.strip()) if args.strip() else 2.0
-            except ValueError:
-                hours = 2.0
+            hours = self.plan.parse_duration(args.strip()) if args.strip() else 2.0
             tasks = await self.plan.plan_session(hours)
             return self.plan.format_plan_telegram(tasks)
 

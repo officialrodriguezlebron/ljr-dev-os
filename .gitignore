@@ -39,3 +39,11 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# credentials — never commit
+*credentials*.json
+*-credentials.json
+google-credentials.json
+oauth-credentials.json
+token.json
+gtoken*.json

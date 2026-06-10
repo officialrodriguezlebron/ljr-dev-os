@@ -6,6 +6,7 @@ from telegram import Update
 from telegram.ext import Application, CommandHandler, ContextTypes, MessageHandler, filters
 
 from agents.supervisor import SupervisorAgent
+from core.groq_client import AIClient
 
 load_dotenv()
 logging.basicConfig(
@@ -16,6 +17,17 @@ logger = logging.getLogger(__name__)
 
 supervisor = SupervisorAgent()
 OWNER_ID = int(os.getenv("OWNER_TELEGRAM_ID", "0"))
+_ai = AIClient()
+
+logger.info("=" * 60)
+logger.info("  LJR.devOS — Lebron's AI Operating System")
+logger.info("=" * 60)
+logger.info(f"  AI: {_ai.get_status()}")
+logger.info(f"  Owner ID: {OWNER_ID}")
+sheets_path = os.getenv("GOOGLE_CREDENTIALS_PATH", "google-credentials.json")
+sheets_ok = os.path.exists(sheets_path)
+logger.info(f"  Sheets: {'✅ credentials found' if sheets_ok else '❌ ' + sheets_path + ' missing'}")
+logger.info("=" * 60)
 
 
 def owner_only(func):
@@ -86,6 +98,10 @@ def build_app() -> Application:
 
 
 if __name__ == "__main__":
+    import asyncio
+    # Python 3.12+ no longer auto-creates an event loop — set one explicitly
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
     logger.info("Starting LJR.devOS bot...")
     app = build_app()
     logger.info("Bot running. Send /start on Telegram.")

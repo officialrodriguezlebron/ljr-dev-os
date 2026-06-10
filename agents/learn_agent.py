@@ -1,6 +1,6 @@
 import datetime
 
-from core.groq_client import GroqClient
+from core.groq_client import AIClient as GroqClient
 from core.models import LearningPath
 from core.sheets_client import SheetsClient
 
