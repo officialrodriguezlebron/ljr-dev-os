@@ -127,21 +127,25 @@ agents/supervisor.py       ← Routes to correct agent
 | 22 | n8n/N8N_SETUP.md | ✅ |
 | 23-25 | docs/*.md | ✅ |
 
-## Current Status — v1.1 (June 11, 2026)
+## Current Status — v1.2 (June 11, 2026)
 - **Bot:** Live and polling — token active, owner lock on ID 5135239563
 - **AI:** Groq ✅ Gemini ✅ Claude ❌ (no key) Ollama ✅
-- **Sheets:** Connected — PROFILE (44 rows), SKILLS (45 rows), PROJECTS (5 rows) seeded
-- **Agents:** All 5 read from master_resume.md via core/resume_parser.py — no hardcoded owner data
+- **Sheets:** Connected — PROFILE (44 rows), SKILLS (45 rows), PROJECTS (5 rows), IDEAS tab created
+- **Agents:** 7 total — supervisor, career, skills, profile, plan, learn, architect
 - **Data loop:** /analyze auto-logs to APPLICATIONS + updates skill frequency with real matched skills
 - **KYNResult:** Now tracks matched_skills — seen skills update their Frequency in SKILLS tab
 - **/track:** Rebuilt — shlex parsing, "KYN Score" header, upsert by Employer+Role (no duplicates)
 - **plan_agent:** Reads live PROJECTS (with Next Task) instead of static master_resume.md
 - **plan_agent:** Energy-aware — /plan 2h high / /plan 1h low adjusts task selection
-- **New commands (23 total):** /update, /done, /sprint, /weekplan
+- **architect_agent:** /idea turns rough ideas into structured specs + self-contained Claude Code prompts
+- **IDEAS tab:** Created — /idea logs spec_ready results; /ideas shows all captured ideas
+- **New commands (25 total):** /update, /done, /sprint, /weekplan, /idea, /ideas
 - **APPLICATIONS:** Cleaned — 10 correct headers; auto-logged by /analyze
 - **INCOME:** Cleaned — 6 correct headers; n8n income_tracker mapping correct
 - **WEEKLY PLANNER tab:** Created — /weekplan writes AI Mon-Fri plan here
+- **n8n morning_briefing:** Fixed duplicate-send bug (parallel→serial connections) + applicant-perspective prompt
 - **skills_agent:** Priority auto-set to Yes when skill frequency reaches 3
+- **start.bat:** findstr regex fix (compatible with all Windows versions)
 - **MCPs:** github ✅ context7 ✅ Gmail ✅ Google Calendar ✅
 - **Active lead:** Jordan + Mark @ LazySun — intro call invite in inbox (June 8, unaccepted — reply needed)
 - **Next:** Reply to LazySun invite → /analyze their post → /plan 2h high → close Meta Ads gap

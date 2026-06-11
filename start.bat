@@ -19,7 +19,7 @@ if not exist ".env" (
 )
 
 :: Check TELEGRAM_TOKEN is filled in
-findstr /r "^TELEGRAM_TOKEN=.\+" .env >nul 2>&1
+findstr /r "^TELEGRAM_TOKEN=." .env >nul 2>&1
 if %ERRORLEVEL% NEQ 0 (
     echo [ERROR] TELEGRAM_TOKEN is empty in .env
     echo.
@@ -71,3 +71,4 @@ if %ERRORLEVEL% NEQ 0 (
     echo.
     pause
 )
+

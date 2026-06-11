@@ -47,3 +47,6 @@ google-credentials.json
 oauth-credentials.json
 token.json
 gtoken*.json
+
+# n8n workflows with baked-in credentials — never commit
+n8n/ready/
