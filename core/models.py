@@ -13,6 +13,7 @@ class KYNResult:
     flags: list[str]
     hidden_instruction: Optional[str]
     rate_usd_hourly: Optional[float]
+    matched_skills: list[str] = field(default_factory=list)
 
     def format_telegram(self) -> str:
         verdict_emoji = {"apply": "✅", "ask_questions": "⚠️", "skip": "❌"}.get(

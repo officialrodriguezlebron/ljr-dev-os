@@ -1,4 +1,5 @@
 import datetime
+import re
 from pathlib import Path
 
 import core.resume_parser as parser
@@ -53,6 +54,38 @@ class CareerAgent:
 
     def score_job(self, post: str) -> KYNResult:
         return self.kyn.score(post)
+
+    def extract_employer_role(self, post: str) -> tuple[str, str]:
+        """Best-effort extract employer name and role title from raw job post text."""
+        employer = "Unknown"
+        role = "Unknown"
+
+        employer_patterns = [
+            r"(?:company|employer|client|we are|we're|hi,?\s+i'm|my name is)\s*:?\s*([A-Z][a-zA-Z0-9\s&'.,-]{2,35}?)(?:\.|,|\n|$)",
+            r"(?:at|join)\s+([A-Z][a-zA-Z0-9\s&'.]{2,30}?)\s*[,.\n]",
+            r"^([A-Z][a-zA-Z0-9\s&'.]{2,30})\s+is\s+(?:looking|hiring|seeking)",
+        ]
+        for pat in employer_patterns:
+            m = re.search(pat, post, re.IGNORECASE | re.MULTILINE)
+            if m:
+                candidate = m.group(1).strip().rstrip(".,")
+                if 2 < len(candidate) < 40 and not candidate.lower().startswith(("i ", "we ", "the ")):
+                    employer = candidate
+                    break
+
+        role_patterns = [
+            r"(?:position|role|title|looking for|hiring a?|need a?)\s*:?\s*([A-Za-z][a-zA-Z\s\-/]{3,45}?)(?:\.|,|\n|$)",
+            r"([A-Za-z][a-zA-Z\s\-/]{3,40})\s+(?:needed|wanted|required|role|position)\b",
+        ]
+        for pat in role_patterns:
+            m = re.search(pat, post, re.IGNORECASE | re.MULTILINE)
+            if m:
+                candidate = m.group(1).strip().rstrip(".,")
+                if 3 < len(candidate) < 50:
+                    role = candidate
+                    break
+
+        return employer[:40], role[:50]
 
     async def analyze_job(self, post: str) -> ApplicationPackage:
         kyn_result = self.kyn.score(post)

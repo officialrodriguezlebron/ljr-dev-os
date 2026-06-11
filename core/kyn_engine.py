@@ -106,7 +106,7 @@ class KYNEngine:
         rate_signal = self._rate_signal(rate, flags)
 
         employer_signal = self._employer_signal(post_lower)
-        fit_signal, fit_score = self._fit_signal(post_lower)
+        fit_signal, fit_score, matched_skills = self._fit_signal(post_lower)
         pakwan_pass, pakwan_flags = self._pakwan_test(post_lower)
         flags.extend(pakwan_flags)
         hidden = self._hidden_instruction(post)
@@ -124,6 +124,7 @@ class KYNEngine:
             flags=flags,
             hidden_instruction=hidden,
             rate_usd_hourly=rate,
+            matched_skills=matched_skills,
         )
 
     def _extract_rate(self, post: str) -> Optional[float]:
@@ -167,17 +168,17 @@ class KYNEngine:
             return "Weak — new/small employer, proceed carefully"
         return "Unclear — do employer research"
 
-    def _fit_signal(self, post_lower: str) -> tuple[str, int]:
-        matched = sum(1 for skill in LEBRON_SKILLS if skill in post_lower)
-        total_words = len(post_lower.split())
+    def _fit_signal(self, post_lower: str) -> tuple[str, int, list[str]]:
+        matched_skills = [skill for skill in LEBRON_SKILLS if skill in post_lower]
+        count = len(matched_skills)
 
-        if matched >= 5:
-            return f"High fit — {matched} matching skills", 30
-        if matched >= 3:
-            return f"Good fit — {matched} matching skills", 20
-        if matched >= 1:
-            return f"Partial fit — {matched} matching skill(s)", 10
-        return "Low fit — few matching skills", 0
+        if count >= 5:
+            return f"High fit — {count} matching skills", 30, matched_skills
+        if count >= 3:
+            return f"Good fit — {count} matching skills", 20, matched_skills
+        if count >= 1:
+            return f"Partial fit — {count} matching skill(s)", 10, matched_skills
+        return "Low fit — few matching skills", 0, []
 
     def _pakwan_test(self, post_lower: str) -> tuple[bool, list[str]]:
         flags = []

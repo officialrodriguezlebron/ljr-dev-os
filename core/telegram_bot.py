@@ -90,10 +90,10 @@ def build_app() -> Application:
 
     commands = [
         "kyn", "analyze", "apply", "followup", "track", "stats",
-        "me", "projects",
+        "me", "projects", "update", "done",
         "skills", "gaps",
         "learn", "roadmap", "log", "logshow",
-        "plan", "next", "morning",
+        "plan", "next", "morning", "weekplan", "sprint",
         "start", "help",
     ]
 

@@ -26,7 +26,12 @@ class ProfileAgent:
 
         try:
             income_rows = self.sheets.find_rows("INCOME", {"Status": "paid"})
-            total = sum(float(r.get("Amount USD", 0)) for r in income_rows)
+            total = 0.0
+            for r in income_rows:
+                try:
+                    total += float(str(r.get("Amount USD", "0")).replace(",", "").strip() or "0")
+                except (ValueError, TypeError):
+                    pass
             income_current = f"${total:.0f}" if total else "₱0"
         except Exception:
             income_current = "₱0"

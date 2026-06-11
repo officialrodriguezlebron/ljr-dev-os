@@ -1,19 +1,23 @@
 import datetime
+import logging
 import re
 
 import core.resume_parser as parser
+
+logger = logging.getLogger(__name__)
 from core.groq_client import AIClient as GroqClient
 from core.models import Task
 from core.sheets_client import SheetsClient
 
 PLAN_PROMPT = """Lebron has exactly {minutes} minutes available ({hours_label}).
 Budget cap: {budget_min} minutes (90% of available — leave buffer).
+{energy_directive}
 
 Situation:
 - Overdue follow-ups (>5 days, no reply): {followup_count}
 - Applications sent total: {app_count}
 - Top skill gaps: {gaps}
-- Active projects: {projects}
+- Active projects and next tasks: {projects}
 - Goal: {short_goal}
 
 Priority order (STRICT — follow this exactly):
@@ -40,6 +44,28 @@ Format each task exactly like this (pipe-separated, no extra text):
 Example:
 10 | Apply to Shopify Dev role | Run /analyze on the job post then send message | Closes income gap fastest
 30 | Meta Ads tutorial | Watch Meta Blueprint Module 1 on blueprint.facebook.com | 40% of target jobs need this"""
+
+WEEKPLAN_PROMPT = """Generate a Monday-Friday work plan for Lebron.
+
+Active projects and next tasks: {projects}
+Open applications tracked: {app_count}
+Follow-ups due: {followup_count}
+Top skill gaps to close: {gaps}
+Goal this week: {short_goal}
+
+Format (exactly — one line per day):
+MON: [primary task] ({{duration}}min)
+TUE: [primary task] ({{duration}}min)
+WED: [primary task] ({{duration}}min)
+THU: [primary task] ({{duration}}min)
+FRI: [primary task] ({{duration}}min)
+Theme: [one-line weekly theme]
+
+Rules:
+- ONE primary task per day (highest value for that day)
+- Mix income-generating tasks (apply/follow-up) with building tasks
+- Friday = review + prep for next week
+- Keep each day under 3 hours"""
 
 MORNING_PROMPT = """Generate a morning briefing for Lebron.
 
@@ -114,10 +140,17 @@ class PlanAgent:
             return val if val <= 5 else val / 60
         return 2.0
 
-    async def plan_session(self, hours: float) -> list[Task]:
+    async def plan_session(self, hours: float, energy: str = "medium") -> list[Task]:
         minutes = round(hours * 60)
         budget_min = round(minutes * 0.9)
         hours_label = f"{hours:.0f}h" if hours == int(hours) else f"{hours:.1f}h"
+
+        energy_directives = {
+            "high": "ENERGY: HIGH — dive straight into the hardest, highest-value task. Full focus mode.",
+            "medium": "ENERGY: MEDIUM — balance focus work with lighter tasks. Start with one high-value task.",
+            "low": "ENERGY: LOW — admin tasks only. ONLY schedule: follow-ups (5 min each), /stats check (5 min), /logshow review (5 min). Skip building and deep-focus tasks entirely.",
+        }
+        energy_directive = energy_directives.get(energy.lower(), energy_directives["medium"])
 
         app_count, followup_count, gaps, projects, short_goal = self._get_context()
 
@@ -127,6 +160,7 @@ class PlanAgent:
                 minutes=minutes,
                 hours_label=hours_label,
                 budget_min=budget_min,
+                energy_directive=energy_directive,
                 app_count=app_count,
                 followup_count=followup_count,
                 gaps=gaps,
@@ -150,7 +184,13 @@ class PlanAgent:
         app_count, followup_count, _, _, short_goal = self._get_context()
         try:
             income_rows = self.sheets.find_rows("INCOME", {"Status": "paid"})
-            income = f"${sum(float(r.get('Amount USD', 0)) for r in income_rows):.0f}"
+            total = 0.0
+            for r in income_rows:
+                try:
+                    total += float(str(r.get("Amount USD", "0")).replace(",", "").strip() or "0")
+                except (ValueError, TypeError):
+                    pass
+            income = f"${total:.0f}"
         except Exception:
             income = "₱0"
 
@@ -210,8 +250,17 @@ class PlanAgent:
             raw_gaps = parser.get_gaps()
             gaps = ", ".join(g["name"] for g in raw_gaps[:3])
 
-        raw_projects = parser.get_projects()
-        projects = ", ".join(p["name"] for p in raw_projects[:4]) if raw_projects else "RutaSmart, CareerOS, LJR.devOS"
+        try:
+            project_rows = self.sheets.read_tab("PROJECTS")
+            project_parts = [
+                f"{r.get('Project', '?')} → {r.get('Next Task', 'TBD')}"
+                for r in project_rows
+                if str(r.get("Status", "")).lower() != "done"
+            ]
+            projects = "; ".join(project_parts) or "No active projects"
+        except Exception:
+            raw_projects = parser.get_projects()
+            projects = ", ".join(p["name"] for p in raw_projects[:4]) if raw_projects else "RutaSmart, CareerOS, LJR.devOS"
         goals = parser.get_goals()
         short_goal = goals.get("Short-term goal", "First remote client by end of June 2026")
 
@@ -246,14 +295,87 @@ class PlanAgent:
                 continue
         return tasks
 
-    def format_plan_telegram(self, tasks: list[Task]) -> str:
+    def format_plan_telegram(self, tasks: list[Task], energy: str = "medium") -> str:
         if not tasks:
             return "Could not generate plan. Try again."
         total_min = sum(t.duration_min for t in tasks)
         h, m = divmod(total_min, 60)
         time_str = f"{h}h {m}m" if h else f"{m}m"
-        lines = [f"*Today's Plan* ({time_str})\n"]
+        energy_tag = {"high": "Full Focus", "medium": "Balanced", "low": "Low Energy"}.get(energy.lower(), "")
+        header = f"*Today's Plan* ({time_str}" + (f" — {energy_tag}" if energy_tag else "") + ")\n"
+        lines = [header]
         for task in tasks:
             lines.append(task.format_telegram())
             lines.append("")
+        return "\n".join(lines)
+
+    async def generate_weekplan(self) -> str:
+        app_count, followup_count, gaps, projects, short_goal = self._get_context()
+        raw = await self.groq.chat(
+            self._system_prompt,
+            WEEKPLAN_PROMPT.format(
+                projects=projects,
+                app_count=app_count,
+                followup_count=followup_count,
+                gaps=gaps,
+                short_goal=short_goal,
+            ),
+            max_tokens=300,
+        )
+        week_start = datetime.date.today() - datetime.timedelta(days=datetime.date.today().weekday())
+
+        try:
+            self.sheets.append_row("WEEKLY PLANNER", {
+                "Week_Start": week_start.isoformat(),
+                "Plan_Text": raw[:1000],
+                "Projects_Covered": projects[:100],
+                "Generated_At": datetime.datetime.now().isoformat(timespec="minutes"),
+            })
+        except Exception as e:
+            logger.warning(f"Could not save weekplan to sheet: {e}")
+
+        return f"*Week of {week_start.strftime('%b %d')}*\n\n{raw}"
+
+    def generate_sprint_view(self) -> str:
+        try:
+            rows = self.sheets.read_tab("PROJECTS")
+        except Exception as e:
+            logger.error(f"Could not read PROJECTS: {e}")
+            return "Could not read Projects sheet."
+
+        this_week: list[str] = []
+        next_week: list[str] = []
+        backlog: list[str] = []
+
+        for r in rows:
+            status = str(r.get("Status", "")).lower()
+            priority = str(r.get("Priority", "")).lower()
+            name = r.get("Project", "?")
+            next_task = r.get("Next Task", "TBD")
+            if status == "done":
+                continue
+            line = f"• *{name}*: {next_task}"
+            if status == "in progress" or priority == "high":
+                this_week.append(line)
+            elif priority in ("medium", "normal"):
+                next_week.append(line)
+            else:
+                backlog.append(line)
+
+        lines = ["*Sprint Board*\n"]
+        if this_week:
+            lines.append("*THIS WEEK:*")
+            lines.extend(this_week)
+            lines.append("")
+        if next_week:
+            lines.append("*NEXT WEEK:*")
+            lines.extend(next_week)
+            lines.append("")
+        if backlog:
+            lines.append("*BACKLOG:*")
+            lines.extend(backlog)
+
+        if not (this_week or next_week or backlog):
+            return "No active projects in sprint board. Add projects to the PROJECTS tab."
+
         return "\n".join(lines)

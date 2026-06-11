@@ -22,6 +22,7 @@ TABS = {
     "LEARNING": "LEARNING LOG",
     "INCOME": "INCOME",
     "DAILY": "DAILY LOG",
+    "WEEKLY PLANNER": "WEEKLY PLANNER",
 }
 
 

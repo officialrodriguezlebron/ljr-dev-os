@@ -18,20 +18,24 @@ LJR.devOS knows who you are, what you're building, and what to do next. Send it 
 | Command | What it does |
 |---------|-------------|
 | `/kyn [job post]` | KYN score: rate, employer, fit, pakwan check |
-| `/analyze [job post]` | Full analysis + AI-generated cover letter |
+| `/analyze [job post]` | Full analysis + cover letter (auto-logs to APPLICATIONS, updates skill frequency) |
 | `/apply [job post]` | Application package ready to send |
 | `/followup` | Follow-ups due today (5+ days, no reply) |
-| `/track Platform\|Employer\|Role\|KYN\|Status` | Log an application |
+| `/track [platform] [employer] [role] [kyn] [status]` | Log or update an application (upserts by employer+role) |
 | `/stats` | Application stats: sent, replies, offers |
 | `/me` | Your full profile snapshot |
 | `/projects` | All active projects and next tasks |
+| `/update [project] [field] [value]` | Update any project field (e.g. `Next Task`, `Status`) |
+| `/done [project] [new next task]` | Mark current task done and set the next one |
+| `/sprint` | Sprint board view: This Week / Next Week / Backlog |
 | `/skills` | All tracked skills by level |
 | `/gaps` | Top skill gaps ranked by market demand |
 | `/learn [skill]` | 3-week project-based learning path |
 | `/roadmap [weeks]` | Multi-week learning roadmap |
 | `/log [skill] [notes]` | Log a learning session |
 | `/logshow` | Recent learning log |
-| `/plan [hours]` | Time-budgeted session plan (e.g. `/plan 2h`) |
+| `/plan [hours] [energy: high/medium/low]` | Time-budgeted session plan (e.g. `/plan 2h high`) |
+| `/weekplan` | AI-generated Monday-Friday plan from live project data |
 | `/next` | Single most important action right now |
 | `/morning` | Morning briefing with priorities |
 | `/help` | All commands |
@@ -138,12 +142,13 @@ The chain falls back automatically. If Groq fails, it tries Gemini, then Claude,
 | Tab | What's stored |
 |-----|--------------|
 | PROFILE | Identity fields, proof points, bio |
-| SKILLS | All skills with level, gap flag, frequency |
-| PROJECTS | Active projects, status, next task |
-| APPLICATIONS | Every job application tracked |
+| SKILLS | All skills with level, gap flag, frequency (auto-updated by /analyze) |
+| PROJECTS | Active projects, status, next task (editable via /update, /done) |
+| APPLICATIONS | Every job application tracked (auto-logged by /analyze, upserted by /track) |
 | LEARNING LOG | Learning sessions and notes |
 | INCOME | Income records and payment status |
 | DAILY LOG | Daily activity log |
+| WEEKLY PLANNER | AI-generated Mon-Fri plans (written by /weekplan) |
 
 ## n8n Automation
 
@@ -185,11 +190,15 @@ ljr-dev-os/
 
 ## Status
 
-v1.0 — June 11, 2026
+v1.1 — June 11, 2026
 
-- 6 agents operational
+- 6 agents operational — 23 commands
 - Google Sheets integration live (PROFILE: 44 rows, SKILLS: 45 rows, PROJECTS: 5 rows)
 - 4-provider AI fallback (Groq + Gemini + Claude + Ollama)
 - n8n morning briefing active
 - Owner-only Telegram lock on user ID
 - All owner data sourced from `master_resume.md` — no hardcoded values
+- Full data loop: /analyze auto-logs to APPLICATIONS + updates skill frequency
+- Energy-aware planning: `/plan 2h high` / `/plan 1h low`
+- Project Hub: `/update`, `/done`, `/sprint`, `/weekplan`
+- APPLICATIONS and INCOME tabs clean — correct 10/6 headers

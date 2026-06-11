@@ -77,7 +77,10 @@ class SkillsAgent:
                 key = skill.lower()
                 if key in existing:
                     freq = int(existing[key].get("Frequency", 0) or 0) + 1
-                    self.sheets.update_row("SKILLS", "Skill", existing[key]["Skill"], {"Frequency": freq})
+                    updates: dict = {"Frequency": freq}
+                    if freq >= 3:
+                        updates["Priority"] = "Yes"
+                    self.sheets.update_row("SKILLS", "Skill", existing[key]["Skill"], updates)
                 else:
                     self.sheets.append_row("SKILLS", {
                         "Skill": skill, "Level": "none", "Gap": "Yes",
