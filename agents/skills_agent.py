@@ -69,17 +69,25 @@ class SkillsAgent:
         result.sort(key=lambda g: (-g.frequency, not g.priority))
         return result
 
-    def update_skill_frequency(self, skills: list[str]) -> None:
+    def update_skill_frequency(self, skills: list[str]) -> list[str]:
+        """
+        Increments Frequency for each matched skill. Returns list of skill names
+        that newly crossed the Priority threshold (freq >= 3) during this call.
+        """
+        newly_elevated: list[str] = []
         try:
             rows = self.sheets.read_tab("SKILLS")
             existing = {str(r.get("Skill", "")).lower(): r for r in rows}
             for skill in skills:
                 key = skill.lower()
                 if key in existing:
+                    prev_priority = str(existing[key].get("Priority", "")).lower() == "yes"
                     freq = int(existing[key].get("Frequency", 0) or 0) + 1
                     updates: dict = {"Frequency": freq}
                     if freq >= 3:
                         updates["Priority"] = "Yes"
+                        if not prev_priority:
+                            newly_elevated.append(existing[key]["Skill"])
                     self.sheets.update_row("SKILLS", "Skill", existing[key]["Skill"], updates)
                 else:
                     self.sheets.append_row("SKILLS", {
@@ -89,6 +97,7 @@ class SkillsAgent:
                     })
         except Exception as e:
             raise RuntimeError(f"Failed to update skill frequency: {e}") from e
+        return newly_elevated
 
     def format_gaps_telegram(self) -> str:
         # Try Sheets with frequency data first

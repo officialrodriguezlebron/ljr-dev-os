@@ -71,4 +71,18 @@ class ProfileAgent:
         ]
 
     def format_telegram(self) -> str:
-        return self.get_profile().format_telegram()
+        base = self.get_profile().format_telegram()
+        focus = parser.get_current_focus()
+        if not focus:
+            return base
+        goal = focus.get("Primary goal", "")
+        learning = focus.get("Current learning focus", "")
+        rate = focus.get("Target rate", "")
+        lines = [base, "\n🎯 *Current Focus:*"]
+        if goal:
+            lines.append(f"Goal: {goal}")
+        if learning:
+            lines.append(f"Learning: {learning}")
+        if rate:
+            lines.append(f"Rate: {rate}")
+        return "\n".join(lines)

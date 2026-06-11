@@ -56,20 +56,36 @@ class SupervisorAgent:
             return result.format_telegram()
 
         if command == "analyze":
-            if len(args) < 50:
-                return "Paste the full job post after /analyze"
-            pkg = await self.career.analyze_job(args)
+            raw_input = args.strip()
+
+            # URL detection — fetch via Firecrawl if input is a URL
+            from core.url_fetcher import detect_platform, fetch_job_post, is_fetch_error, is_url
+            detected_platform = "analyzed"
+            if is_url(raw_input):
+                detected_platform = detect_platform(raw_input)
+                fetched = await fetch_job_post(raw_input)
+                if is_fetch_error(fetched):
+                    from core.url_fetcher import fetch_error_message
+                    return fetch_error_message(fetched)
+                job_text = fetched
+            else:
+                job_text = raw_input
+
+            if len(job_text) < 50:
+                return "Paste the full job post after /analyze (or a valid job URL)"
+
+            pkg = await self.career.analyze_job(job_text)
 
             # Cache KYN score for /track
             self._last_kyn["last"] = pkg.kyn.score
 
-            # Auto-log to APPLICATIONS with status "ready to apply"
-            employer, role = self.career.extract_employer_role(args)
+            # Auto-log to APPLICATIONS
+            employer, role = self.career.extract_employer_role(job_text)
             today = datetime.date.today()
             try:
                 self.sheets.append_row("APPLICATIONS", {
                     "Date": today.isoformat(),
-                    "Platform": "analyzed",
+                    "Platform": detected_platform,
                     "Employer": employer,
                     "Role": role,
                     "KYN Score": str(pkg.kyn.score),
@@ -82,14 +98,29 @@ class SupervisorAgent:
             except Exception as e:
                 logger.warning(f"Auto-log failed for /analyze: {e}")
 
-            # Update skill frequency from matched skills
+            # Update skill frequency + detect newly elevated skills
+            newly_elevated: list[str] = []
             if pkg.kyn.matched_skills:
                 try:
-                    self.skills.update_skill_frequency(pkg.kyn.matched_skills)
+                    newly_elevated = self.skills.update_skill_frequency(pkg.kyn.matched_skills)
                 except Exception as e:
                     logger.warning(f"Skill frequency update failed: {e}")
 
-            return pkg.format_telegram()
+            response = pkg.format_telegram()
+
+            # Weak-skill flag (primary requirement is a known weak area)
+            flag = self.career.check_weak_skill_flag(job_text)
+            if flag:
+                response += f"\n\n{flag}"
+
+            # New priority skill notification
+            for skill in newly_elevated:
+                response += (
+                    f"\n\n📚 New priority skill detected: *{skill}* now appears in 3+ analyzed jobs. "
+                    f"Run `/learn {skill}` for a learning path."
+                )
+
+            return response
 
         if command == "apply":
             if len(args) < 50:

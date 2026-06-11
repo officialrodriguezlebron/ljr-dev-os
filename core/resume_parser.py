@@ -154,6 +154,25 @@ def get_projects() -> list[dict]:
     return projects or _default_projects()
 
 
+def get_current_focus() -> dict[str, str]:
+    """Returns {field: value} from ## CURRENT FOCUS & GOALS table."""
+    text = _text()
+    m = re.search(
+        r"## CURRENT FOCUS & GOALS\n\n\|.*?\|\n\|.*?\|\n(.*?)(?=\n---|\n## |\Z)",
+        text,
+        re.DOTALL,
+    )
+    if not m:
+        return {}
+    result: dict[str, str] = {}
+    for line in m.group(1).strip().split("\n"):
+        if "|" in line and "---" not in line:
+            parts = [p.strip() for p in line.strip("|").split("|")]
+            if len(parts) == 2 and parts[0]:
+                result[parts[0]] = parts[1]
+    return result
+
+
 def get_goals() -> dict[str, str]:
     """Returns {field: value} from ## INCOME & GOALS table."""
     text = _text()

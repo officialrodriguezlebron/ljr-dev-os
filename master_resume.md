@@ -302,6 +302,20 @@ I build Shopify stores from scratch — custom Liquid, HTML/CSS, and JavaScript,
 
 ---
 
+## CURRENT FOCUS & GOALS
+
+| Field | Value |
+|---|---|
+| Primary goal | Land first freelance client via CareerOS |
+| Secondary goal | RutaSmart thesis completion (graduation 2026) |
+| Current learning focus | GoHighLevel, Meta Ads |
+| Strongest skills (pitch these) | Shopify, Liquid, CRO, TikTok Shop operations |
+| Weakest skills (don't oversell) | Mobile app dev, Meta Ads (learning), Cloud/DevOps |
+| Target rate | $7-10/hr or $400-800/month depending on role type |
+| Avoid roles requiring | Mobile app development as primary skill (genuine gap) |
+
+---
+
 ## INCOME & GOALS
 
 | Field | Value |

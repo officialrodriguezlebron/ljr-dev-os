@@ -146,6 +146,41 @@ class CareerAgent:
             gaps=kyn_result.flags,
         )
 
+    def check_weak_skill_flag(self, post: str) -> str | None:
+        """
+        Returns a warning string if the job's PRIMARY requirement is a known weak skill,
+        else None. 'Primary' = appears in the opening 300 chars OR mentioned 3+ times.
+        """
+        post_lower = post.lower()
+        opening = post_lower[:300]
+
+        weak_groups = [
+            (
+                "mobile app development",
+                ["mobile app", "mobile developer", "mobile development",
+                 "react native", "flutter", "ios dev", "android dev", "ios app", "android app"],
+            ),
+            (
+                "Meta Ads / Facebook Ads",
+                ["meta ads", "facebook ads", "facebook advertising", "instagram ads",
+                 "paid social", "fb ads"],
+            ),
+            (
+                "Cloud / DevOps",
+                ["devops engineer", "cloud engineer", "cloud infrastructure",
+                 "kubernetes", "docker swarm", "aws engineer", "azure engineer", "gcp engineer"],
+            ),
+        ]
+
+        for label, keywords in weak_groups:
+            for kw in keywords:
+                if kw in opening or post_lower.count(kw) >= 3:
+                    return (
+                        f"⚠️ Note: this role's primary requirement ({label}) is outside "
+                        f"your current strengths — consider if worth the application time"
+                    )
+        return None
+
     async def generate_followup(self, employer: str) -> str:
         prompt = f"""Write a short 2-sentence follow-up message to {employer}.
         Lebron applied 7 days ago. Polite, confident, not desperate.
