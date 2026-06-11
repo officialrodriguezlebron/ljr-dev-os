@@ -18,7 +18,7 @@ that lead with proof, anchor rates, and address gaps honestly.
 
 Rules:
 - Lead with one specific proof point (number + outcome)
-- Anchor rate at $8-10/hr for Shopify, $7-10/hr for general dev, $5-7/hr for eCommerce VA
+- Use EXACTLY the rate provided in the prompt — never invent a different number
 - Never say "I am a quick learner" — show learning via proof
 - Address gaps head-on: "I'm currently building X, 2-week ramp"
 - Max 3 short paragraphs — no walls of text
@@ -36,13 +36,14 @@ Rate Signal: {rate_signal}
 Employer Signal: {employer_signal}
 Skill Fit: {fit_signal}
 Gaps to address: {gaps}
+Rate Anchor: {rate_anchor} — USE THIS EXACT RATE in the cover letter body. Do not generate a different number.
 
 Format:
 Subject: [one punchy line]
 ---
 [Cover letter body — max 3 paragraphs, 150 words total]
 ---
-Rate Anchor: [state your rate confidently]"""
+Rate Anchor: {rate_anchor}"""
 
 
 class CareerAgent:
@@ -116,6 +117,7 @@ class CareerAgent:
             employer_signal=kyn_result.employer_signal,
             fit_signal=kyn_result.fit_signal,
             gaps=", ".join(kyn_result.flags[:3]) or "none",
+            rate_anchor=rate_anchor_default,
         )
 
         raw = await self.groq.chat(SYSTEM_PROMPT, prompt, max_tokens=500)
