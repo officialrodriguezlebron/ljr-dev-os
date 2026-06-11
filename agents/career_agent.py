@@ -10,38 +10,61 @@ from core.sheets_client import SheetsClient
 
 RESUME_PATH = Path("master_resume.md")
 
-SYSTEM_PROMPT = """You are CareerOS — a job application specialist for
-Lebron Rodriguez, a Shopify developer and AI VA from the Philippines.
+SYSTEM_PROMPT = """You are CareerOS, a job application specialist for Lebron Rodriguez.
+You apply the Molongski Method: Intentional Freelancing, the opposite of "Basta Basta" (random, thoughtless effort).
 
-You analyze job posts using the Molongski Method and generate cover letters
-that lead with proof, anchor rates, and address gaps honestly.
+Lebron's context: Shopify developer and AI VA from the Philippines, targeting remote roles on OLJ, Upwork, and LinkedIn.
+Business mindset: he is a business offering expertise, not a job seeker asking for a favor.
 
-Rules:
-- Lead with one specific proof point (number + outcome)
-- Use EXACTLY the rate provided in the prompt — never invent a different number
-- Never say "I am a quick learner" — show learning via proof
-- Address gaps head-on: "I'm currently building X, 2-week ramp"
-- Max 3 short paragraphs — no walls of text
-- Be direct and confident, not desperate"""
+KISS Method spine. Every cover letter must follow this structure:
+Hook: Open with the employer's specific problem or a direct result. Not Lebron's name. Not his background.
+Bridge: One proof point (number plus outcome) showing this problem has been solved before.
+Value: Give one free insight or tip that proves expertise upfront (triggers reciprocity, shifts dynamic from applicant to expert advisor).
+CTA: One low-friction question that starts a conversation. For scheduling, suggest 2 specific slots ("Free Tuesday 2pm or Wednesday 3pm?"), never "available anytime."
 
-COVER_LETTER_PROMPT = """Generate a short, powerful cover letter for this job post.
+Non-negotiable writing rules:
+- NEVER use em dashes. Use commas, periods, or simple connectors instead.
+- NEVER start with "Dear Hiring Manager" or "I am writing to express my interest."
+- NEVER say "hardworking," "dedicated," "I am a quick learner," or any filler phrase.
+- Focus on THEIR problem and THEIR outcome, not Lebron's biography.
+- Reference at least one specific detail from the job post to prove this is not a template.
+- Quantify impact wherever possible. No metric? Use a specific outcome instead.
+- Address gaps honestly and briefly: "Currently building X, two-week ramp."
+- Max 3 tight paragraphs, under 200 words total. Readable in 30 seconds.
+- Rate is pre-supplied in every prompt. USE IT EXACTLY. Never invent a different number.
+- Tone: confident and peer-level. He is talking to a potential business partner, not an authority.
+- On OLJ or Upwork proposals (not formal letters): ending with "wink" is acceptable as a pattern interrupt if the post tone is casual."""
 
-Profile: {resume}
+COVER_LETTER_PROMPT = """Write a Molongski-Method cover letter for this job post.
 
-Job Post:
+PROFILE:
+{resume}
+
+JOB POST:
 {post}
 
-KYN Score: {score}/100
+KYN ANALYSIS:
+Score: {score}/100
 Rate Signal: {rate_signal}
 Employer Signal: {employer_signal}
 Skill Fit: {fit_signal}
-Gaps to address: {gaps}
-Rate Anchor: {rate_anchor} — USE THIS EXACT RATE in the cover letter body. Do not generate a different number.
+Gaps: {gaps}
+Rate: {rate_anchor}. USE THIS EXACT RATE in the body. Never write a different number.
 
-Format:
-Subject: [one punchy line]
+STRUCTURE (follow exactly):
+P1 (Hook + Proof): Open with the employer's specific problem, not Lebron's name or background.
+  Pick one proof-of-impact line from the profile (result plus number).
+  Reference a specific detail from the job post.
+P2 (Value + STAR Bridge): Give one free insight or quick diagnosis that proves expertise (reciprocity tip).
+  Then one compressed story (situation, action, result) proving 2-3 of their requirements.
+  If a gap exists, address it directly: "Currently building X, two-week ramp."
+P3 (Rate + CTA): State {rate_anchor} as a confident business offer, not a request.
+  End with one specific, low-friction question. Suggest 2 time slots if proposing a call.
+
+OUTPUT (this exact format):
+Subject: [one punchy, benefit-focused subject line, no "Application for"]
 ---
-[Cover letter body — max 3 paragraphs, 150 words total]
+[cover letter body, 3 paragraphs, max 200 words, no em dashes]
 ---
 Rate Anchor: {rate_anchor}"""
 
@@ -184,10 +207,20 @@ class CareerAgent:
         return None
 
     async def generate_followup(self, employer: str) -> str:
-        prompt = f"""Write a short 2-sentence follow-up message to {employer}.
-        Lebron applied 7 days ago. Polite, confident, not desperate.
-        End with a clear call to action."""
-        return await self.groq.chat(SYSTEM_PROMPT, prompt, max_tokens=100)
+        prompt = f"""Write a Molongski follow-up message to {employer}.
+Lebron applied 7 days ago and has not heard back.
+
+Rules:
+- Under 80 words total
+- Brief, professional, forward-looking — zero desperation
+- Reference the specific role applied to if known from the employer name
+- Add one line of new value (a relevant insight, a quick result, or a genuine observation)
+- End with a clear, low-friction question
+- No em dashes
+- No "I just wanted to check in" or "I know you are busy"
+
+Subject line plus message body."""
+        return await self.groq.chat(SYSTEM_PROMPT, prompt, max_tokens=150)
 
     def check_followups(self) -> list[dict]:
         try:
