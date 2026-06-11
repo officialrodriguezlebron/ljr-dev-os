@@ -296,6 +296,9 @@ class SupervisorAgent:
             "`/update [project] [field] [value]` — Update a project field\n"
             "`/done [project] [new next task]` — Mark task done, set next\n"
             "`/sprint` — Sprint board view\n\n"
+            "*🏗️ BUILD:*\n"
+            "`/idea [description]` — Turn an idea into a Claude Code spec\n"
+            "`/ideas` — See all captured ideas\n\n"
             "*Skills:*\n"
             "`/skills` — All skills\n"
             "`/gaps` — Top skill gaps\n\n"
@@ -308,10 +311,7 @@ class SupervisorAgent:
             "`/plan [hours] [energy: high/medium/low]` — Session plan\n"
             "`/weekplan` — AI-generated Mon-Fri plan\n"
             "`/next` — Next best action\n"
-            "`/morning` — Morning briefing\n\n"
-            "*Architect:*\n"
-            "`/idea [description]` — Turn a rough idea into a Claude Code prompt\n"
-            "`/ideas` — View all captured ideas"
+            "`/morning` — Morning briefing"
         )
 
     def _format_idea_result(self, result: dict, original_idea: str) -> str:

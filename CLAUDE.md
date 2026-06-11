@@ -103,6 +103,26 @@ agents/supervisor.py       ← Routes to correct agent
 - Conventional commits: feat:, fix:, chore:, docs:
 - Push after every working feature
 
+## Architect Agent (/idea, /ideas)
+
+Workflow: Lebron sends `/idea [rough description]` from phone. Architect Agent either asks clarifying questions or produces a full spec + ready-to-paste Claude Code prompt with relevant skill hints embedded.
+
+This is a **MANUAL HANDOFF** system — Lebron copies the generated prompt and pastes it into a SEPARATE Claude Code session himself. There is no auto-execution.
+
+IDEAS tab in LJR.devOS Master sheet tracks: Date, Idea, Status (captured/built), Problem, Solution, Acceptance Criteria, Claude Code Prompt.
+
+When building features for LJR.devOS itself going forward, prefer:
+**think of idea → /idea on phone → get spec → paste into Claude Code → build → mark IDEAS row as "built" manually.**
+
+Skill hints auto-embedded in generated prompts:
+- Always: ljros-conventions + code-reviewer
+- UI/frontend work: + frontend-design + ui-ux-pro-max
+- React/Next.js: + vercel-react-best-practices
+- Website auditing/scraping: + browser-use
+- New feature with unclear approach: + brainstorming
+
+Deferred features (CEO Agent, QA Agent, Claude Code Bridge, GitHub PR automation): see docs/PHASE7_ROADMAP.md for documented trigger conditions.
+
 ## Build Order
 
 | # | File | Status |
@@ -127,25 +147,23 @@ agents/supervisor.py       ← Routes to correct agent
 | 22 | n8n/N8N_SETUP.md | ✅ |
 | 23-25 | docs/*.md | ✅ |
 
-## Current Status — v1.2 (June 11, 2026)
+## Current Status — v1.3 Phase 6 COMPLETE (June 11, 2026)
 - **Bot:** Live and polling — token active, owner lock on ID 5135239563
 - **AI:** Groq ✅ Gemini ✅ Claude ❌ (no key) Ollama ✅
-- **Sheets:** Connected — PROFILE (44 rows), SKILLS (45 rows), PROJECTS (5 rows), IDEAS tab created
+- **Sheets:** Connected — PROFILE (44 rows), SKILLS (45 rows), PROJECTS (5 rows), IDEAS tab active
 - **Agents:** 7 total — supervisor, career, skills, profile, plan, learn, architect
+- **Phase 6 (Architect Agent):** COMPLETE
+  - architect_agent.py: /idea → spec_ready or needs_clarification with context-aware questions
+  - Skill hints auto-embedded: ljros-conventions + code-reviewer always; others conditional
+  - ljros-conventions skill created at .claude/skills/ljros-conventions/SKILL.md
+  - /help updated: BUILD section added (between Projects and Skills)
+  - docs/PHASE7_ROADMAP.md: deferred features documented with trigger conditions
+  - IDEAS tab logging verified: Status="captured", /ideas lists all entries
 - **Data loop:** /analyze auto-logs to APPLICATIONS + updates skill frequency with real matched skills
 - **KYNResult:** Now tracks matched_skills — seen skills update their Frequency in SKILLS tab
 - **/track:** Rebuilt — shlex parsing, "KYN Score" header, upsert by Employer+Role (no duplicates)
-- **plan_agent:** Reads live PROJECTS (with Next Task) instead of static master_resume.md
-- **plan_agent:** Energy-aware — /plan 2h high / /plan 1h low adjusts task selection
-- **architect_agent:** /idea turns rough ideas into structured specs + self-contained Claude Code prompts
-- **IDEAS tab:** Created — /idea logs spec_ready results; /ideas shows all captured ideas
-- **New commands (25 total):** /update, /done, /sprint, /weekplan, /idea, /ideas
-- **APPLICATIONS:** Cleaned — 10 correct headers; auto-logged by /analyze
-- **INCOME:** Cleaned — 6 correct headers; n8n income_tracker mapping correct
-- **WEEKLY PLANNER tab:** Created — /weekplan writes AI Mon-Fri plan here
-- **n8n morning_briefing:** Fixed duplicate-send bug (parallel→serial connections) + applicant-perspective prompt
-- **skills_agent:** Priority auto-set to Yes when skill frequency reaches 3
-- **start.bat:** findstr regex fix (compatible with all Windows versions)
+- **plan_agent:** Energy-aware — /plan 2h high / /plan 1h low; reads live PROJECTS
+- **n8n morning_briefing:** v2 fixed (= prefix bugs, sequential flow, no $env refs)
 - **MCPs:** github ✅ context7 ✅ Gmail ✅ Google Calendar ✅
 - **Active lead:** Jordan + Mark @ LazySun — intro call invite in inbox (June 8, unaccepted — reply needed)
-- **Next:** Reply to LazySun invite → /analyze their post → /plan 2h high → close Meta Ads gap
+- **Next focus:** Reply to LazySun → /analyze their post → /plan 2h high. No more LJR.devOS builds until Phase 7 trigger or first client.
