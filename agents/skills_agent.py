@@ -122,6 +122,34 @@ class SkillsAgent:
             )
         return "\n".join(lines)
 
+    def format_skills_compact(self) -> str:
+        try:
+            rows = self.sheets.read_tab("SKILLS")
+        except Exception:
+            return "Could not read Skills sheet."
+        if not rows:
+            return "No skills data. Import from master_resume.md first."
+
+        gaps = [r for r in rows if str(r.get("Gap", "")).lower() in ("yes", "true", "1")]
+        gaps_sorted = sorted(gaps, key=lambda r: int(r.get("Frequency", 0) or 0), reverse=True)
+        strong = [
+            r for r in rows
+            if str(r.get("Level", "")).lower() in ("advanced", "experienced", "intermediate")
+            and str(r.get("Gap", "")).lower() not in ("yes", "true", "1")
+        ]
+
+        lines = ["📚 GAPS (by demand)"]
+        for i, g in enumerate(gaps_sorted[:3], 1):
+            freq = int(g.get("Frequency", 0) or 0)
+            lines.append(f"{i}. {g.get('Skill', '?')} — {freq}x" if freq else f"{i}. {g.get('Skill', '?')} — —")
+
+        if strong:
+            lines.append("")
+            lines.append("✅ Strong: " + ", ".join(str(r.get("Skill", "")) for r in strong[:5]))
+
+        result = "\n".join(lines).strip()
+        return result[:400] if len(result) > 400 else result
+
     def format_skills_telegram(self) -> str:
         rows = self.get_skills()
         if not rows:

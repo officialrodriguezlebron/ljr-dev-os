@@ -89,6 +89,7 @@ def build_app() -> Application:
     app = Application.builder().token(token).build()
 
     commands = [
+        "overview", "applications",
         "kyn", "analyze", "apply", "followup", "track", "stats",
         "me", "projects", "update", "done",
         "skills", "gaps",

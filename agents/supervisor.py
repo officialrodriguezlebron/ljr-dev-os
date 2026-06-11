@@ -5,6 +5,7 @@ import shlex
 
 from agents.architect_agent import ArchitectAgent
 from agents.career_agent import CareerAgent
+from agents.overview_agent import OverviewAgent
 from agents.learn_agent import LearnAgent
 from agents.plan_agent import PlanAgent
 from agents.profile_agent import ProfileAgent
@@ -26,6 +27,7 @@ class SupervisorAgent:
         self.plan = PlanAgent(sheets, groq)
         self.learn = LearnAgent(sheets, groq)
         self.architect = ArchitectAgent()
+        self.overview = OverviewAgent()
         self.sheets = sheets
         self.ai = groq
 
@@ -41,6 +43,13 @@ class SupervisorAgent:
             return f"Error in `{command}`: {e}\n\nTry again or check logs."
 
     async def _dispatch(self, command: str, args: str) -> str:
+        # ── Daily dashboard ────────────────────────────────────────────
+        if command == "overview":
+            return self.overview.get_overview(self.sheets)
+
+        if command == "applications":
+            return self.career.format_applications_compact()
+
         # ── Career commands ────────────────────────────────────────────
         if command == "kyn":
             result = self.career.score_job(args)
@@ -210,7 +219,7 @@ class SupervisorAgent:
 
         # ── Skills commands ────────────────────────────────────────────
         if command == "skills":
-            return self.skills.format_skills_telegram()
+            return self.skills.format_skills_compact()
 
         if command == "gaps":
             return self.skills.format_gaps_telegram()
@@ -284,6 +293,10 @@ class SupervisorAgent:
     def _help_text(self) -> str:
         return (
             "*LJR.devOS* — Lebron's AI Operating System\n\n"
+            "*📱 DAILY:*\n"
+            "`/overview` — your day in one screen\n"
+            "`/applications` — application pipeline\n"
+            "`/skills` — skill gaps and strengths\n\n"
             "*Career:*\n"
             "`/kyn [post]` — KYN score\n"
             "`/analyze [post]` — Full analysis + cover letter (auto-logs)\n"

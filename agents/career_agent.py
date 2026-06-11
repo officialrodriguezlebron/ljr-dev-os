@@ -184,6 +184,53 @@ class CareerAgent:
             )
         return "\n".join(lines)
 
+    def format_applications_compact(self) -> str:
+        try:
+            apps = self.sheets.read_tab("APPLICATIONS")
+        except Exception:
+            return "Could not read Applications sheet."
+        today = datetime.date.today()
+        total = len(apps)
+        applied = sum(1 for r in apps if str(r.get("Status", "")).lower() in ("applied", "ready to apply"))
+        interview = sum(1 for r in apps if "interview" in str(r.get("Status", "")).lower())
+        replied_count = sum(1 for r in apps if str(r.get("Replied", "")).lower() == "yes")
+        rejected = sum(1 for r in apps if "reject" in str(r.get("Status", "")).lower())
+
+        lines = [f"📊 APPLICATIONS ({total} total)\n"]
+        lines.append(f"Applied: {applied} | Interview: {interview} | Replied: {replied_count} | Rejected: {rejected}\n")
+
+        due = self.check_followups()
+        if due:
+            lines.append("📬 FOLLOW-UPS DUE")
+            for row in due[:3]:
+                employer = row.get("Employer", "?")
+                fu_raw = str(row.get("Follow-up Date", "")).strip()
+                try:
+                    days = (today - datetime.date.fromisoformat(fu_raw)).days
+                    days_str = f"{days}d overdue" if days > 0 else "due today"
+                except ValueError:
+                    days_str = "check date"
+                lines.append(f"• {employer} — {days_str}")
+            lines.append("")
+
+        from collections import defaultdict
+        p_total: dict = defaultdict(int)
+        p_replied: dict = defaultdict(int)
+        for row in apps:
+            p = str(row.get("Platform", "")).strip()
+            if not p:
+                continue
+            p_total[p] += 1
+            if str(row.get("Replied", "")).lower() == "yes":
+                p_replied[p] += 1
+        if p_total:
+            rates = {p: p_replied[p] / p_total[p] * 100 for p in p_total}
+            best = max(rates, key=rates.__getitem__)
+            lines.append(f"🎯 Best platform: {best} ({rates[best]:.0f}%)")
+
+        result = "\n".join(lines).strip()
+        return result[:600] if len(result) > 600 else result
+
     def get_stats(self) -> str:
         try:
             apps = self.sheets.read_tab("APPLICATIONS")
