@@ -21,6 +21,11 @@ These were part of the original "AI software company" vision but are deferred. E
 **Status:** Not built
 **Depends on:** Claude Code Bridge (above). Same trigger conditions.
 
+## Calendar Write / NLU (6A-3b)
+**Status:** Not built — read-only shipped in 6A-3a
+**Reason:** Read-only (/today, /free, /schedule) covers the core need. Write support (creating/editing events from Telegram) adds significant complexity (NLP parsing, conflict detection, undo flows) with unclear daily value until the read commands prove useful.
+**Revisit if:** `/today`, `/free`, or `/schedule` used daily for 1 week without issues — then the read path is validated and write support has a clear user.
+
 ## Energy Pattern Learning (deep version)
 **Status:** Basic version shipped (`/plan [time] [energy: high/medium/low]`)
 The deep version (auto-detecting energy from usage patterns, time of day, etc.) is deferred.

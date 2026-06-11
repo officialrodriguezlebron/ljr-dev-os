@@ -4,6 +4,7 @@ import re
 import shlex
 
 from agents.architect_agent import ArchitectAgent
+from agents.calendar_agent import CalendarAgent
 from agents.career_agent import CareerAgent
 from agents.overview_agent import OverviewAgent
 from agents.learn_agent import LearnAgent
@@ -27,6 +28,7 @@ class SupervisorAgent:
         self.plan = PlanAgent(sheets, groq)
         self.learn = LearnAgent(sheets, groq)
         self.architect = ArchitectAgent()
+        self.calendar = CalendarAgent()
         self.overview = OverviewAgent()
         self.sheets = sheets
         self.ai = groq
@@ -49,6 +51,16 @@ class SupervisorAgent:
 
         if command == "applications":
             return self.career.format_applications_compact()
+
+        if command == "today":
+            return self.calendar.get_today()
+
+        if command == "free":
+            return self.calendar.get_free_slots()
+
+        if command == "schedule":
+            days = int(args.strip()) if args.strip().isdigit() else 3
+            return self.calendar.get_schedule(days=days)
 
         # ── Career commands ────────────────────────────────────────────
         if command == "kyn":
@@ -327,7 +339,10 @@ class SupervisorAgent:
             "*📱 DAILY:*\n"
             "`/overview` — your day in one screen\n"
             "`/applications` — application pipeline\n"
-            "`/skills` — skill gaps and strengths\n\n"
+            "`/skills` — skill gaps and strengths\n"
+            "`/today` — today's calendar events\n"
+            "`/free` — free slots ≥30min today\n"
+            "`/schedule` — next 3 days compact\n\n"
             "*Career:*\n"
             "`/kyn [post]` — KYN score\n"
             "`/analyze [post]` — Full analysis + cover letter (auto-logs)\n"
