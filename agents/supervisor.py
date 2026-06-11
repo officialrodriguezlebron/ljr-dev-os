@@ -3,6 +3,7 @@ import logging
 import re
 import shlex
 
+from agents.architect_agent import ArchitectAgent
 from agents.career_agent import CareerAgent
 from agents.learn_agent import LearnAgent
 from agents.plan_agent import PlanAgent
@@ -24,7 +25,9 @@ class SupervisorAgent:
         self.profile = ProfileAgent(sheets)
         self.plan = PlanAgent(sheets, groq)
         self.learn = LearnAgent(sheets, groq)
+        self.architect = ArchitectAgent()
         self.sheets = sheets
+        self.ai = groq
 
         # Session cache: last KYN score from /analyze (keyed by "last")
         self._last_kyn: dict[str, int] = {}
@@ -259,6 +262,19 @@ class SupervisorAgent:
         if command == "sprint":
             return self.plan.generate_sprint_view()
 
+        # ── Architect commands ─────────────────────────────────────────
+        if command == "idea":
+            if not args.strip():
+                return (
+                    "*Usage:* /idea [description]\n"
+                    "Example: `/idea Add /platforms command to show reply rates by platform`"
+                )
+            result = await self.architect.process_idea(args.strip(), self.ai)
+            return self._format_idea_result(result, args.strip())
+
+        if command == "ideas":
+            return self._format_ideas_list()
+
         # ── System ─────────────────────────────────────────────────────
         if command in ("start", "help"):
             return self._help_text()
@@ -292,5 +308,98 @@ class SupervisorAgent:
             "`/plan [hours] [energy: high/medium/low]` — Session plan\n"
             "`/weekplan` — AI-generated Mon-Fri plan\n"
             "`/next` — Next best action\n"
-            "`/morning` — Morning briefing"
+            "`/morning` — Morning briefing\n\n"
+            "*Architect:*\n"
+            "`/idea [description]` — Turn a rough idea into a Claude Code prompt\n"
+            "`/ideas` — View all captured ideas"
         )
+
+    def _format_idea_result(self, result: dict, original_idea: str) -> str:
+        status = result.get("status", "error")
+
+        if status == "needs_clarification":
+            questions = result.get("questions", [])
+            if not questions:
+                return "Unclear idea — please add more detail and try again."
+            lines = ["A few questions before I spec this out:\n"]
+            for i, q in enumerate(questions[:3], 1):
+                lines.append(f"{i}. {q}")
+            lines.append(
+                f"\nReply with: `/idea {original_idea[:40]} -- [your answers]`"
+            )
+            return "\n".join(lines)
+
+        if status == "spec_ready":
+            problem = result.get("problem", "")
+            solution = result.get("solution", "")
+            criteria = result.get("acceptance_criteria", [])
+            prompt = result.get("claude_code_prompt", "")
+
+            # Log to IDEAS tab
+            try:
+                self.sheets.append_row("IDEAS", {
+                    "Date": datetime.date.today().isoformat(),
+                    "Idea": original_idea[:200],
+                    "Status": "captured",
+                    "Problem": problem,
+                    "Solution": solution,
+                    "Acceptance Criteria": " | ".join(criteria),
+                    "Claude Code Prompt": prompt[:1000],
+                })
+            except Exception as e:
+                logger.warning(f"IDEAS tab log failed: {e}")
+
+            criteria_lines = "\n".join(f"• {c}" for c in criteria)
+            return (
+                "*IDEA SPECCED*\n\n"
+                f"*Problem:* {problem}\n"
+                f"*Solution:* {solution}\n\n"
+                f"*Acceptance Criteria:*\n{criteria_lines}\n\n"
+                f"*Paste this into Claude Code:*\n```\n{prompt}\n```\n\n"
+                "Logged to IDEAS tab. Run /ideas to see all captured ideas."
+            )
+
+        # error
+        return result.get("message", "Could not process idea, try rephrasing")
+
+    def _format_ideas_list(self) -> str:
+        try:
+            rows = self.sheets.read_tab("IDEAS")
+        except Exception as e:
+            logger.error(f"IDEAS read failed: {e}")
+            return "Could not read IDEAS tab."
+
+        if not rows:
+            return "No ideas captured yet. Use /idea [description] to spec one."
+
+        captured = [r for r in rows if str(r.get("Status", "")).lower() == "captured"]
+        built = [r for r in rows if str(r.get("Status", "")).lower() == "built"]
+        other = [r for r in rows if r not in captured and r not in built]
+
+        lines = [f"*CAPTURED IDEAS* ({len(rows)} total)\n"]
+
+        if captured:
+            lines.append("*Not yet built:*")
+            for r in captured:
+                date = r.get("Date", "?")
+                idea = str(r.get("Idea", ""))[:60]
+                lines.append(f"- {date} — {idea}")
+            lines.append("")
+
+        if built:
+            lines.append("*Built:*")
+            for r in built:
+                date = r.get("Date", "?")
+                idea = str(r.get("Idea", ""))[:60]
+                lines.append(f"- {date} — {idea}")
+            lines.append("")
+
+        if other:
+            lines.append("*Other:*")
+            for r in other:
+                date = r.get("Date", "?")
+                idea = str(r.get("Idea", ""))[:60]
+                status = r.get("Status", "?")
+                lines.append(f"- {date} [{status}] — {r.get('Idea', '')[:60]}")
+
+        return "\n".join(lines).strip()

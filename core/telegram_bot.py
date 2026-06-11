@@ -94,6 +94,7 @@ def build_app() -> Application:
         "skills", "gaps",
         "learn", "roadmap", "log", "logshow",
         "plan", "next", "morning", "weekplan", "sprint",
+        "idea", "ideas",
         "start", "help",
     ]
 
