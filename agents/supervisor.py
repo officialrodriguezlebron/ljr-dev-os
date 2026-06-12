@@ -125,12 +125,17 @@ class SupervisorAgent:
             if flag:
                 response += f"\n\n{flag}"
 
-            # New priority skill notification
-            for skill in newly_elevated:
-                response += (
-                    f"\n\n📚 New priority skill detected: *{skill}* now appears in 3+ analyzed jobs. "
-                    f"Run `/learn {skill}` for a learning path."
-                )
+            # New priority skill notification — show max 2, summarize overflow
+            if newly_elevated:
+                shown = newly_elevated[:2]
+                overflow = len(newly_elevated) - len(shown)
+                for skill in shown:
+                    response += (
+                        f"\n\n📚 New priority skill: *{skill}* now appears in 3+ analyzed jobs. "
+                        f"Run `/learn {skill}` for a learning path."
+                    )
+                if overflow > 0:
+                    response += f"\n+{overflow} more priority skills elevated — run `/gaps` to see all."
 
             return response
 

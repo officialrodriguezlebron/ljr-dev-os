@@ -1,6 +1,11 @@
 import re
 
 import core.resume_parser as parser
+
+
+def _normalize_skill(s: str) -> str:
+    """Dedup key: lowercase, remove hyphens/spaces. 'e-commerce' -> 'ecommerce'."""
+    return re.sub(r"[-\s]+", "", s.lower()).strip()
 from core.groq_client import AIClient as GroqClient
 from core.models import SkillGap
 from core.sheets_client import SheetsClient
@@ -71,32 +76,38 @@ class SkillsAgent:
 
     def update_skill_frequency(self, skills: list[str]) -> list[str]:
         """
-        Increments Frequency for each matched skill. Returns list of skill names
-        that newly crossed the Priority threshold (freq >= 3) during this call.
+        Increments Frequency for each matched skill. Returns names that newly crossed
+        the Priority threshold (freq >= 3), sorted by new frequency desc.
+        Normalizes skill names to prevent e-commerce/ecommerce duplicates.
         """
         newly_elevated: list[str] = []
+        freq_map: dict[str, int] = {}
         try:
             rows = self.sheets.read_tab("SKILLS")
-            existing = {str(r.get("Skill", "")).lower(): r for r in rows}
+            existing = {_normalize_skill(str(r.get("Skill", ""))): r for r in rows}
             for skill in skills:
-                key = skill.lower()
+                key = _normalize_skill(skill)
                 if key in existing:
-                    prev_priority = str(existing[key].get("Priority", "")).lower() == "yes"
-                    freq = int(existing[key].get("Frequency", 0) or 0) + 1
+                    row = existing[key]
+                    prev_priority = str(row.get("Priority", "")).lower() == "yes"
+                    freq = int(row.get("Frequency", 0) or 0) + 1
+                    freq_map[key] = freq
                     updates: dict = {"Frequency": freq}
                     if freq >= 3:
                         updates["Priority"] = "Yes"
                         if not prev_priority:
-                            newly_elevated.append(existing[key]["Skill"])
-                    self.sheets.update_row("SKILLS", "Skill", existing[key]["Skill"], updates)
+                            newly_elevated.append(str(row["Skill"]))
+                    self.sheets.update_row("SKILLS", "Skill", row["Skill"], updates)
                 else:
                     self.sheets.append_row("SKILLS", {
                         "Skill": skill, "Level": "none", "Gap": "Yes",
                         "Frequency": 1, "Priority": "No", "Resource": "",
                         "Completed": "No",
                     })
+                    freq_map[key] = 1
         except Exception as e:
             raise RuntimeError(f"Failed to update skill frequency: {e}") from e
+        newly_elevated.sort(key=lambda name: -(freq_map.get(_normalize_skill(name), 0)))
         return newly_elevated
 
     def format_gaps_telegram(self) -> str:
