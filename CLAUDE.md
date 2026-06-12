@@ -147,23 +147,23 @@ Deferred features (CEO Agent, QA Agent, Claude Code Bridge, GitHub PR automation
 | 22 | n8n/N8N_SETUP.md | ✅ |
 | 23-25 | docs/*.md | ✅ |
 
-## Current Status — v1.3 Phase 6 COMPLETE (June 11, 2026)
+## Current Status — v1.4 Phase 6A COMPLETE (June 12, 2026)
 - **Bot:** Live and polling — token active, owner lock on ID 5135239563
 - **AI:** Groq ✅ Gemini ✅ Claude ❌ (no key) Ollama ✅
 - **Sheets:** Connected — PROFILE (44 rows), SKILLS (45 rows), PROJECTS (5 rows), IDEAS tab active
-- **Agents:** 7 total — supervisor, career, skills, profile, plan, learn, architect
-- **Phase 6 (Architect Agent):** COMPLETE
-  - architect_agent.py: /idea → spec_ready or needs_clarification with context-aware questions
-  - Skill hints auto-embedded: ljros-conventions + code-reviewer always; others conditional
-  - ljros-conventions skill created at .claude/skills/ljros-conventions/SKILL.md
-  - /help updated: BUILD section added (between Projects and Skills)
-  - docs/PHASE7_ROADMAP.md: deferred features documented with trigger conditions
-  - IDEAS tab logging verified: Status="captured", /ideas lists all entries
-- **Data loop:** /analyze auto-logs to APPLICATIONS + updates skill frequency with real matched skills
-- **KYNResult:** Now tracks matched_skills — seen skills update their Frequency in SKILLS tab
-- **/track:** Rebuilt — shlex parsing, "KYN Score" header, upsert by Employer+Role (no duplicates)
-- **plan_agent:** Energy-aware — /plan 2h high / /plan 1h low; reads live PROJECTS
-- **n8n morning_briefing:** v2 fixed (= prefix bugs, sequential flow, no $env refs)
-- **MCPs:** github ✅ context7 ✅ Gmail ✅ Google Calendar ✅
+- **Agents:** 10 total — supervisor, career, skills, profile, plan, learn, architect, overview, calendar + analyst/pm blueprinted
+- **Phase 6A (Daily OS):** COMPLETE
+  - 6A-1: /overview, /applications, compact /skills (overview_agent.py)
+  - 6A-2: /analyze [url] via Firecrawl, CURRENT FOCUS in /me, new-priority skill notification
+  - 6A-3a: /today, /free, /schedule via Google Calendar API (calendar_agent.py, calendar_client.py)
+  - 6A-3b: Calendar write/NLU — deferred, spec in PHASE7_ROADMAP.md
+- **Career:** Molongski Method fully encoded in SYSTEM_PROMPT + COVER_LETTER_PROMPT
+  - KISS spine, Tips/reciprocity technique, Calendar Method for CTAs, wink guidance
+  - Rate anchor fix: pre-injected into prompt, no AI drift possible
+- **AI Team Blueprint:** docs/AI_TEAM_BLUEPRINT.md — 7 agents, 4 sprints, full spec
+  - pm_agent, analyst_agent, research_agent, qa_agent, backend_agent, frontend_agent
+  - Build trigger: after June 20 thesis defense
+  - Sheets changes needed: ROADMAP, BACKLOG, RESEARCH_LOG tabs
+- **Calendar setup needed:** share with careeros-bot@careeros-498909.iam.gserviceaccount.com + GOOGLE_CALENDAR_ID in .env
 - **Active lead:** Jordan + Mark @ LazySun — intro call invite in inbox (June 8, unaccepted — reply needed)
-- **Next focus:** Reply to LazySun → /analyze their post → /plan 2h high. No more LJR.devOS builds until Phase 7 trigger or first client.
+- **Next focus:** RutaSmart thesis defense June 20 → reply LazySun → AI Team Sprint 1 after defense.
