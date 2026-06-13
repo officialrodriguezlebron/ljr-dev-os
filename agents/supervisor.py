@@ -12,7 +12,16 @@ from agents.plan_agent import PlanAgent
 from agents.profile_agent import ProfileAgent
 from agents.reply_agent import ReplyAgent
 from agents.skills_agent import SkillsAgent
+from agents.content_calendar_agent import ContentCalendarAgent
+from agents.email_audit_agent import EmailAuditAgent
+from agents.meta_ads_agent import MetaAdsAgent
+from agents.pdp_agent import PdpAgent
+from agents.photo_qa_agent import PhotoQaAgent
+from agents.reel_content_agent import ReelContentAgent
+from agents.tiktok_agent import TiktokAgent
+from agents.toggl_agent import TogglAgent
 from core.groq_client import AIClient
+from core.knowledge_client import KnowledgeClient
 from core.schedule_engine import ScheduleEngine
 from core.sheets_client import SheetsClient
 
@@ -37,8 +46,20 @@ class SupervisorAgent:
         self.sheets = sheets
         self.ai = groq
 
-        # Session cache: last KYN score from /analyze (keyed by "last")
+        # Phase 7 — ecommerce AI team
+        self.pdp = PdpAgent()
+        self.photo_qa = PhotoQaAgent()
+        self.tiktok_shop = TiktokAgent()
+        self.meta_ads = MetaAdsAgent()
+        self.content_cal = ContentCalendarAgent()
+        self.email_audit = EmailAuditAgent()
+        self.reel = ReelContentAgent()
+        self.toggl = TogglAgent()
+        self._knowledge = KnowledgeClient()
+
+        # Session caches
         self._last_kyn: dict[str, int] = {}
+        self._last_output: dict | None = None  # Last ecommerce agent output for /log
 
     async def route(self, command: str, args: str) -> str:
         logger.info(f"Routing: {command} | args: {args[:60]}")
@@ -317,9 +338,26 @@ class SupervisorAgent:
             return await self.learn.generate_roadmap(weeks)
 
         if command == "log":
+            if not args.strip():
+                # Phase 7: save last ecommerce output to knowledge base
+                if not self._last_output:
+                    return (
+                        "Nothing to log. Run an ecommerce command first (`/pdp`, `/meta`, `/tiktok`, `/reel`, etc.)\n"
+                        "Or: `/log [skill] [notes]` to log learning progress"
+                    )
+                task_dir = self._knowledge.save_task(
+                    self._last_output["agent"],
+                    self._last_output["request"],
+                    self._last_output["output"],
+                )
+                return (
+                    f"Saved to knowledge base: `{task_dir.name}`\n"
+                    f"Reply `/feedback [your notes]` to record what worked."
+                )
+            # Legacy: /log [skill] [notes] for learning
             parts = args.split(" ", 1)
             if len(parts) < 2:
-                return "Usage: /log [skill] [notes]"
+                return "Usage: `/log [skill] [notes]` or `/log` (no args) to save last ecommerce output"
             self.learn.log_progress(parts[0], parts[1])
             return f"Logged progress on *{parts[0]}*"
 
@@ -365,6 +403,144 @@ class SupervisorAgent:
         if command == "ideas":
             return self._format_ideas_list()
 
+        # ── Phase 7: Ecommerce AI Team ─────────────────────────────────
+        if command == "pdp":
+            if not args.strip():
+                return (
+                    "*Usage:* `/pdp [product info]`\n"
+                    "Include: product name, price, material, key story/reference\n"
+                    "Add `revision:` prefix to revise existing copy."
+                )
+            is_revision = args.strip().lower().startswith("revision:")
+            info = args.strip()[9:].strip() if is_revision else args.strip()
+            result = await self.pdp.write_pdp(info, self.ai, is_revision=is_revision)
+            self._last_output = {"agent": "pdp", "request": args.strip(), "output": result}
+            return result
+
+        if command == "photoreview":
+            if not args.strip():
+                return "*Usage:* `/photoreview [image url] [optional context]`"
+            parts = args.strip().split(" ", 1)
+            url = parts[0]
+            context_note = parts[1] if len(parts) > 1 else ""
+            if not url.startswith(("http://", "https://")):
+                return "Provide a direct image URL (ending in .jpg/.png etc.). Or send a photo in chat for Telegram review."
+            result = await self.photo_qa.review_from_url(url, context_note, self.ai)
+            self._last_output = {"agent": "photo_qa", "request": args.strip(), "output": result}
+            return result
+
+        if command == "tiktok":
+            if not args.strip():
+                return (
+                    "*Usage:* `/tiktok [product info]`\n"
+                    "Include: product name, price, key detail, own-label or brand name"
+                )
+            result = await self.tiktok_shop.write_listing(args.strip(), self.ai)
+            self._last_output = {"agent": "tiktok", "request": args.strip(), "output": result}
+            return result
+
+        if command == "meta":
+            if not args.strip():
+                return (
+                    "*Usage:* `/meta [product info]`\n"
+                    "Include: product name, price, key benefit, AOV (for budget tier)"
+                )
+            result = await self.meta_ads.write_ads(args.strip(), self.ai)
+            self._last_output = {"agent": "meta_ads", "request": args.strip(), "output": result}
+            return result
+
+        if command == "contentcal":
+            if not args.strip():
+                return (
+                    "*Usage:* `/contentcal [brief]`\n"
+                    "Include: month, active products, any email campaigns planned"
+                )
+            result = await self.content_cal.build_calendar(args.strip(), self.ai)
+            self._last_output = {"agent": "content_cal", "request": args.strip(), "output": result}
+            return result
+
+        if command == "emailaudit":
+            brief = args.strip() or "No existing flow info — assume standard Shopify Email defaults."
+            result = await self.email_audit.audit(brief, self.ai)
+            self._last_output = {"agent": "email_audit", "request": brief, "output": result}
+            return result
+
+        if command == "reel":
+            if not args.strip():
+                return (
+                    "*Usage:* `/reel [brief]`\n"
+                    "Include: product/subject, platform (Reels/TikTok), tone, any specific moment to capture"
+                )
+            result = await self.reel.write_reel(args.strip(), self.ai)
+            self._last_output = {"agent": "reel", "request": args.strip(), "output": result}
+            return result
+
+        if command == "toggl":
+            if not args.strip():
+                return (
+                    "*Usage:* `/toggl [task description] [optional: Xmin]`\n"
+                    "Examples:\n"
+                    "`/toggl Updated PDP copy for Saturday Pants`\n"
+                    "`/toggl Jordan call 45min`"
+                )
+            # Parse optional duration
+            parts = args.rsplit(" ", 1)
+            duration_min = 30
+            desc = args.strip()
+            if len(parts) == 2 and parts[1].lower().endswith("min") and parts[1][:-3].isdigit():
+                duration_min = int(parts[1][:-3])
+                desc = parts[0].strip()
+            return await self.toggl.log_time(desc, duration_min)
+
+        if command == "hours":
+            return await self.toggl.get_hours()
+
+        if command == "togglreport":
+            return await self.toggl.get_report()
+
+        if command == "feedback":
+            if not args.strip():
+                return (
+                    "*Usage:* `/feedback [your notes on what worked / what to change]`\n"
+                    "Run after reviewing AI output — saves final version + extracts lessons."
+                )
+            agent_name = self._last_output["agent"] if self._last_output else "unknown"
+            self._knowledge.save_final(agent_name, args.strip())
+
+            extract_prompt = f"""Extract actionable lessons from this creative feedback.
+
+Feedback: {args.strip()}
+
+Output EXACTLY (no extra text):
+LESSON: [one specific, reusable lesson for future work]
+JORDAN_FEEDBACK: [any "avoid X" or "prefer Y" pattern Jordan expressed, or NONE]"""
+
+            extracted = await self.ai.chat(
+                "You extract concise lessons from creative work feedback. Be specific.",
+                extract_prompt,
+                max_tokens=150,
+            )
+
+            lesson = ""
+            jordan_fb = ""
+            for line in extracted.splitlines():
+                if line.startswith("LESSON:"):
+                    lesson = line.replace("LESSON:", "").strip()
+                elif line.startswith("JORDAN_FEEDBACK:") and "none" not in line.lower():
+                    jordan_fb = line.replace("JORDAN_FEEDBACK:", "").strip()
+
+            if lesson:
+                self._knowledge.append_lesson(lesson)
+            if jordan_fb:
+                self._knowledge.append_jordan_feedback(jordan_fb)
+
+            msg = "Feedback saved."
+            if lesson:
+                msg += f"\nLesson noted: _{lesson}_"
+            if jordan_fb:
+                msg += f"\nJordan preference: _{jordan_fb}_"
+            return msg
+
         # ── System ─────────────────────────────────────────────────────
         if command in ("start", "help"):
             return self._help_text()
@@ -409,7 +585,23 @@ class SupervisorAgent:
             "`/plan [hours] [energy: high/medium/low]` — Session plan\n"
             "`/weekplan` — AI-generated Mon-Fri plan\n"
             "`/next` — Next best action\n"
-            "`/morning` — Morning briefing"
+            "`/morning` — Morning briefing\n\n"
+            "*🛍️ ECOMMERCE AI TEAM:*\n"
+            "`/pdp [product info]` — Write full Shopify PDP (9 sections)\n"
+            "`/photoreview [url]` — QA product photo (PASS/NEEDS REVISION/FAIL)\n"
+            "`/tiktok [product info]` — TikTok Shop title, hashtags, keywords\n"
+            "`/meta [product info]` — Meta ads (4 angles, ASC structure)\n"
+            "`/contentcal [brief]` — 4-week content calendar\n"
+            "`/emailaudit [flow info]` — Audit 5 email flows\n"
+            "`/reel [brief]` — Reel/TikTok script + CapCut instructions\n\n"
+            "*⏱️ TIME TRACKING:*\n"
+            "`/toggl [description] [Xmin]` — Log time to Toggl\n"
+            "`/hours` — This week's hours vs 20hr target\n"
+            "`/togglreport` — Jordan-ready weekly summary\n\n"
+            "*📚 KNOWLEDGE LOOP:*\n"
+            "`/log` — Save last ecommerce output to knowledge base\n"
+            "`/log [skill] [notes]` — Log learning progress\n"
+            "`/feedback [notes]` — Record what worked, extract lessons"
         )
 
     def _format_idea_result(self, result: dict, original_idea: str) -> str:

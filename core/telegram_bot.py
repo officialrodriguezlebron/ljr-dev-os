@@ -76,6 +76,35 @@ async def handle_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
 
 
 @owner_only
+async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Telegram photo upload → photo_qa_agent review."""
+    await update.message.chat.send_action("typing")
+    try:
+        photo = update.message.photo[-1]  # Largest available size
+        caption = update.message.caption or ""
+
+        tg_file = await context.bot.get_file(photo.file_id)
+        image_bytes = await tg_file.download_as_bytearray()
+
+        response = await supervisor.photo_qa.review_from_bytes(
+            bytes(image_bytes), "image/jpeg", caption, supervisor.ai
+        )
+        supervisor._last_output = {"agent": "photo_qa", "request": caption or "uploaded photo", "output": response}
+
+        if len(response) > 4000:
+            for i in range(0, len(response), 4000):
+                await update.message.reply_text(response[i : i + 4000], parse_mode="Markdown")
+        else:
+            await update.message.reply_text(response, parse_mode="Markdown")
+
+    except Exception as e:
+        logger.error(f"handle_photo error: {e}", exc_info=True)
+        await update.message.reply_text(
+            "❌ Photo review failed. Make sure GOOGLE_API_KEY is set in .env (Gemini vision required)."
+        )
+
+
+@owner_only
 async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     text = update.message.text.strip()
     try:
@@ -307,12 +336,19 @@ def build_app() -> Application:
         "learn", "roadmap", "log", "logshow",
         "plan", "next", "morning", "weekplan", "sprint",
         "idea", "ideas",
+        # Phase 7 — ecommerce AI team
+        "pdp", "photoreview", "tiktok", "meta", "contentcal", "emailaudit", "reel",
+        # Time tracking
+        "toggl", "hours", "togglreport",
+        # Knowledge loop
+        "feedback",
         "start", "help",
     ]
 
     for cmd in commands:
         app.add_handler(CommandHandler(cmd, handle_command))
 
+    app.add_handler(MessageHandler(filters.PHOTO, handle_photo))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_text))
 
     return app

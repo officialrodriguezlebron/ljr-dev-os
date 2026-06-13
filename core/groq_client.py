@@ -130,6 +130,38 @@ class AIClient:
             resp.raise_for_status()
             return resp.json()["content"][0]["text"].strip()
 
+    async def gemini_vision(
+        self,
+        system: str,
+        prompt: str,
+        image_bytes: bytes,
+        mime_type: str = "image/jpeg",
+        max_tokens: int = 600,
+    ) -> str:
+        """Gemini 2.0 Flash with inline image — for photo QA reviews."""
+        if not self.gemini_key:
+            raise ValueError("GOOGLE_API_KEY / GEMINI_API_KEY not set — vision review unavailable")
+        import base64
+        b64 = base64.b64encode(image_bytes).decode("utf-8")
+        async with httpx.AsyncClient(timeout=45) as client:
+            resp = await client.post(
+                f"{GEMINI_URL}?key={self.gemini_key}",
+                json={
+                    "system_instruction": {"parts": [{"text": system}]},
+                    "contents": [
+                        {
+                            "parts": [
+                                {"inline_data": {"mime_type": mime_type, "data": b64}},
+                                {"text": prompt},
+                            ]
+                        }
+                    ],
+                    "generationConfig": {"maxOutputTokens": max_tokens, "temperature": 0.4},
+                },
+            )
+            resp.raise_for_status()
+            return resp.json()["candidates"][0]["content"]["parts"][0]["text"].strip()
+
     async def ollama_chat(self, system: str, user: str, max_tokens: int = 400) -> str:
         """Ollama local — deepseek-r1:8b — free, always available, 20-60s"""
         async with httpx.AsyncClient(timeout=120) as client:
