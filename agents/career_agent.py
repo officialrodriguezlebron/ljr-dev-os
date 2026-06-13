@@ -114,7 +114,7 @@ class CareerAgent:
         self.sheets = sheets
         self.groq = groq
         self.kyn = KYNEngine()
-        self._resume = RESUME_PATH.read_text(encoding="utf-8")
+        self._resume = RESUME_PATH.read_text(encoding="utf-8") if RESUME_PATH.exists() else "[master_resume.md not found — run setup]"
 
     def score_job(self, post: str) -> KYNResult:
         return self.kyn.score(post)

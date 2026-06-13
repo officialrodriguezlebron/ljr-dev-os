@@ -10,6 +10,8 @@ RESUME_PATH = Path("master_resume.md")
 
 
 def _text() -> str:
+    if not RESUME_PATH.exists():
+        return ""
     return RESUME_PATH.read_text(encoding="utf-8")
 
 

@@ -175,21 +175,7 @@ class SupervisorAgent:
 
             return response
 
-        if command == "apply":
-            raw_input = args.strip()
-            from core.url_fetcher import detect_platform, fetch_job_post, is_fetch_error, is_url
-            if is_url(raw_input):
-                fetched = await fetch_job_post(raw_input)
-                if is_fetch_error(fetched):
-                    from core.url_fetcher import fetch_error_message
-                    return fetch_error_message(fetched)
-                job_text = fetched
-            else:
-                job_text = raw_input
-            if len(job_text) < 50:
-                return "Paste the full job post after /apply (or a valid job URL)"
-            pkg = await self.career.analyze_job(job_text)
-            return f"*Application Package*\n\n{pkg.format_telegram()}"
+        # /apply is handled by ConversationHandler in telegram_bot.py — never reaches here
 
         if command == "reply":
             if not args.strip():
