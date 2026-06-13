@@ -10,8 +10,10 @@ from agents.overview_agent import OverviewAgent
 from agents.learn_agent import LearnAgent
 from agents.plan_agent import PlanAgent
 from agents.profile_agent import ProfileAgent
+from agents.reply_agent import ReplyAgent
 from agents.skills_agent import SkillsAgent
 from core.groq_client import AIClient
+from core.schedule_engine import ScheduleEngine
 from core.sheets_client import SheetsClient
 
 logger = logging.getLogger(__name__)
@@ -30,6 +32,8 @@ class SupervisorAgent:
         self.architect = ArchitectAgent()
         self.calendar = CalendarAgent()
         self.overview = OverviewAgent()
+        self.reply = ReplyAgent()
+        self.schedule_engine = ScheduleEngine()
         self.sheets = sheets
         self.ai = groq
 
@@ -53,7 +57,18 @@ class SupervisorAgent:
             return self.career.format_applications_compact()
 
         if command == "today":
-            return self.calendar.get_today()
+            return self.schedule_engine.get_today_schedule()
+
+        if command == "adjust":
+            if not args.strip():
+                return (
+                    "*Usage:* /adjust [what's changing]\n"
+                    "Examples:\n"
+                    "`/adjust in commute til noon`\n"
+                    "`/adjust sleep early tonight, wrap up by 9PM`\n"
+                    "`/adjust push LazySun block to tomorrow`"
+                )
+            return await self.schedule_engine.adjust_schedule(args.strip(), self.ai)
 
         if command == "free":
             return self.calendar.get_free_slots()
@@ -140,10 +155,28 @@ class SupervisorAgent:
             return response
 
         if command == "apply":
-            if len(args) < 50:
-                return "Paste the full job post after /apply"
-            pkg = await self.career.analyze_job(args)
+            raw_input = args.strip()
+            from core.url_fetcher import detect_platform, fetch_job_post, is_fetch_error, is_url
+            if is_url(raw_input):
+                fetched = await fetch_job_post(raw_input)
+                if is_fetch_error(fetched):
+                    from core.url_fetcher import fetch_error_message
+                    return fetch_error_message(fetched)
+                job_text = fetched
+            else:
+                job_text = raw_input
+            if len(job_text) < 50:
+                return "Paste the full job post after /apply (or a valid job URL)"
+            pkg = await self.career.analyze_job(job_text)
             return f"*Application Package*\n\n{pkg.format_telegram()}"
+
+        if command == "reply":
+            if not args.strip():
+                return (
+                    "*Usage:* /reply [paste message content]\n"
+                    "Example: `/reply Hi Lebron, are you ready for Monday? — Jordan`"
+                )
+            return await self.reply.draft_reply(args.strip(), self.ai)
 
         if command == "followup":
             return self.career.format_followups_telegram()
@@ -343,15 +376,16 @@ class SupervisorAgent:
             "*LJR.devOS* — Lebron's AI Operating System\n\n"
             "*📱 DAILY:*\n"
             "`/overview` — your day in one screen\n"
+            "`/today` — today's schedule (fixed + flex blocks)\n"
+            "`/adjust [text]` — mid-day schedule adjustment\n"
+            "`/reply [message]` — draft 3 tone variants for any message\n"
             "`/applications` — application pipeline\n"
-            "`/skills` — skill gaps and strengths\n"
-            "`/today` — today's calendar events\n"
-            "`/free` — free slots ≥30min today\n"
-            "`/schedule` — next 3 days compact\n\n"
+            "`/free` — free slots ≥30min (Google Calendar)\n"
+            "`/schedule` — next 3 days calendar view\n\n"
             "*Career:*\n"
-            "`/kyn [post]` — KYN score\n"
-            "`/analyze [post]` — Full analysis + cover letter (auto-logs)\n"
-            "`/apply [post]` — Application package\n"
+            "`/apply [url or post]` — Full pipeline + confirm gate (logs to Sheets)\n"
+            "`/analyze [url or post]` — Quick analysis + cover letter (auto-logs)\n"
+            "`/kyn [post]` — KYN score only\n"
             "`/followup` — Follow-ups due today\n"
             "`/track [platform] [employer] [role] [kyn] [status]`\n"
             "`/stats` — Application stats\n\n"
