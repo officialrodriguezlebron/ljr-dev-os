@@ -1,7 +1,7 @@
 # LJR.devOS — System State
 
 > Full reference for new Claude Code sessions. Read this entire file before touching any code.
-> Last updated: 2026-06-14 | Version: v2.0 Phase 7 COMPLETE
+> Last updated: 2026-06-15 | Version: v2.0 Phase 7 COMPLETE + Dashboard
 
 ---
 
@@ -12,7 +12,10 @@
 - **Primary interface:** Telegram bot (owner-only, locked to Telegram ID 5135239563)
 - **AI runtime:** Groq `llama-3.3-70b-versatile` → Gemini 2.0 Flash → Claude Sonnet 4.6 → Ollama `deepseek-r1:8b`
 - **Data layer:** Google Sheets (LJR.devOS Master workbook, ID in `LJROS_SHEETS_ID` env var)
-- **Run command:** `python -m core.telegram_bot` from repo root
+- **Run command:** `python -m core.telegram_bot` (Telegram only) or `python core/run_all.py` (Telegram + API)
+- **HTTP API:** `core/api_server.py` — FastAPI on port 8000, `POST /run`, `GET /health`, `GET /commands`
+- **Web dashboard:** `https://ynitos.vercel.app` — Next.js, Tailscale IP `100.116.49.59:8000`
+- **Combined launcher:** `python core/run_all.py` — shares one `SupervisorAgent` between Telegram + HTTP
 
 ---
 
@@ -299,6 +302,10 @@ self._last_output: dict | None = None
 | `TOGGL_LAZYSUN_PROJECT_ID` | Optional | toggl_agent.py | Project ID for LazySun entries |
 | `TOGGL_WORKSPACE_ID` | Optional | toggl_agent.py | Auto-fetched from API if missing |
 | `OWNER_TELEGRAM_ID` | YES | telegram_bot.py | 5135239563 — owner lock |
+| `LJROS_API_KEY` | YES for HTTP API | api_server.py | Dashboard auth header `X-API-Key` |
+| `LJROS_API_PORT` | Optional | run_all.py | Default: 8000 |
+| `LJROS_API_TIMEOUT` | Optional | api_server.py | Seconds before 504, default: 60 |
+| `LJROS_CORS_ORIGINS` | Optional | api_server.py | Comma-separated origins. Default: `*`. Set to `https://ynitos.vercel.app` |
 
 **CRITICAL:** `GEMINI_API_KEY` must be a Gemini API key from Google AI Studio (starts with `AIzaSy...`). `GOOGLE_API_KEY` in current `.env` is a Google Cloud key — different thing. Set `GEMINI_API_KEY` separately for `/photoreview`, photo QA, and Gemini fallback to work.
 
@@ -376,10 +383,13 @@ Context stored in `context.user_data`: `apply_pkg`, `apply_employer`, `apply_rol
 
 ---
 
-## Current Status — v2.0 Phase 7 COMPLETE (2026-06-14)
+## Current Status — v2.0 Phase 7 COMPLETE + Dashboard (2026-06-15)
 
 - **Bot:** Live, polling, owner-locked to 5135239563
-- **AI:** Groq ✅ | Gemini (text) ✅ | Gemini (vision) ⚠️ GEMINI_API_KEY not set | Claude ❌ | Ollama ✅
+- **AI:** Groq ✅ | Gemini (text) ✅ via GOOGLE_API_KEY fallback | Gemini (vision) ⚠️ GEMINI_API_KEY not set | Claude ❌ | Ollama ✅
+- **HTTP API:** `core/api_server.py` live on port 8000, Tailscale `100.116.49.59:8000`, API key auth, 60s timeout
+- **Dashboard:** `https://ynitos.vercel.app` — 4-mode navigation (today/lazysun/career/system), auto-runs /today on load
+- **CORS:** `LJROS_CORS_ORIGINS=https://ynitos.vercel.app` (set in .env)
 - **Sheets:** PROFILE (44 rows), SKILLS (45 rows), PROJECTS (5 rows), IDEAS tab active
 - **Agents:** 18 total (10 original + 8 Phase 7 ecommerce)
 
@@ -388,12 +398,13 @@ Context stored in `context.user_data`: `apply_pkg`, `apply_employer`, `apply_rol
 - Phase 6A: Daily OS — /overview, /analyze URL, /today schedule, /free calendar, /schedule
 - Phase 6B: Three flows — BS4 URL fallback, /apply ConversationHandler, /today+/adjust+/reply wired
 - **Phase 7 (COMPLETE):** 8 ecommerce agents + knowledge loop + Toggl time tracking
+- **Phase 7.5 (COMPLETE):** HTTP API + run_all.py + Tailscale docs + web dashboard (ynitos.vercel.app)
 
 **Active client:** LazySun (Jordan Haddadi + Mark) — trial started June 15, $400/mo, 20hrs/week
 **Focus priority:** LazySun → RutaSmart compliance → LJR.devOS → CareerOS
 
 **Pending items:**
-- Set `GEMINI_API_KEY=AIzaSy...` from Google AI Studio (required for /photoreview and photo QA)
+- Set `GEMINI_API_KEY=AIzaSy...` from Google AI Studio — enables photo QA + proper Gemini quota (1,500 req/day)
 - Set `TOGGL_API_TOKEN` and `TOGGL_LAZYSUN_PROJECT_ID` in .env when Toggl is configured
 - RutaSmart: 6 compliance items before final submission (no hard deadline)
 

@@ -22,9 +22,15 @@ app = FastAPI(
     description="HTTP interface to LJR.devOS — same routing as Telegram bot",
 )
 
+# LJROS_CORS_ORIGINS: comma-separated list of allowed origins.
+# Set to your Vercel URL: LJROS_CORS_ORIGINS=https://ynitos.vercel.app
+# Defaults to "*" (open) — safe because all POST requests require API key.
+_cors_env = os.getenv("LJROS_CORS_ORIGINS", "*")
+_cors_origins: list[str] = [o.strip() for o in _cors_env.split(",") if o.strip()]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # lock to Vercel domain once known, e.g. ["https://ljr-dashboard.vercel.app"]
+    allow_origins=_cors_origins,
     allow_methods=["GET", "POST"],
     allow_headers=["*"],
 )
