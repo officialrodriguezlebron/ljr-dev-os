@@ -1,5 +1,5 @@
 @echo off
-title LJR.devOS Bot
+title LJR.devOS
 echo.
 echo ============================================================
 echo  LJR.devOS — Pre-flight checks
@@ -19,7 +19,7 @@ if not exist ".env" (
 )
 
 :: Check TELEGRAM_TOKEN is filled in
-findstr /r "^TELEGRAM_TOKEN=." .env >nul 2>&1
+findstr /r "^TELEGRAM_TOKEN=.\+" .env >nul 2>&1
 if %ERRORLEVEL% NEQ 0 (
     echo [ERROR] TELEGRAM_TOKEN is empty in .env
     echo.
@@ -56,19 +56,40 @@ python scripts/seed_data.py
 echo.
 
 :start_bot
-echo [OK] Pre-flight passed. Starting bot...
+echo [OK] Pre-flight passed. Starting servers...
 echo.
+echo Options:
+echo   [1] Combined (recommended) — Telegram + HTTP API in one window
+echo   [2] Separate windows       — one window per server
+echo.
+set /p CHOICE="Choose [1 or 2, default=1]: "
+if "%CHOICE%"=="2" goto :separate
 
-python -m core.telegram_bot
-
+:combined
+echo.
+echo Starting combined server (python core/run_all.py)...
+python core/run_all.py
 if %ERRORLEVEL% NEQ 0 (
     echo.
-    echo [ERROR] Bot crashed with exit code %ERRORLEVEL%
-    echo Check the error above. Common fixes:
+    echo [ERROR] Server crashed with exit code %ERRORLEVEL%
+    echo Common fixes:
     echo   - pip install -r requirements.txt
     echo   - Check TELEGRAM_TOKEN in .env
     echo   - Check GROQ_API_KEY in .env
     echo.
     pause
 )
+goto :eof
 
+:separate
+echo.
+echo Launching Telegram bot in new window...
+start cmd /k "cd /d "%~dp0" && python -m core.telegram_bot"
+echo Launching HTTP API server in new window (port 8000)...
+start cmd /k "cd /d "%~dp0" && uvicorn core.api_server:app --host 0.0.0.0 --port 8000"
+echo.
+echo Both servers launched in separate windows.
+echo HTTP API: http://localhost:8000
+echo Health:   http://localhost:8000/health
+echo.
+pause
