@@ -10,6 +10,7 @@ import logging
 import os
 
 from fastapi import FastAPI, Header, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
 from agents.supervisor import SupervisorAgent
@@ -19,6 +20,13 @@ logger = logging.getLogger(__name__)
 app = FastAPI(
     title="LJR.devOS API",
     description="HTTP interface to LJR.devOS — same routing as Telegram bot",
+)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # lock to Vercel domain once known, e.g. ["https://ljr-dashboard.vercel.app"]
+    allow_methods=["GET", "POST"],
+    allow_headers=["*"],
 )
 
 # Populated by run_all.py when running combined; lazy-init otherwise
