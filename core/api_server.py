@@ -5,6 +5,7 @@ Shortcuts (or any HTTP client) can call any bot command directly.
 Standalone:  uvicorn core.api_server:app --host 0.0.0.0 --port 8000
 Combined:    python core/run_all.py  (shares supervisor with Telegram bot)
 """
+import asyncio
 import logging
 import os
 
@@ -27,6 +28,46 @@ API_KEY = os.getenv("LJROS_API_KEY")
 if not API_KEY:
     logger.warning("LJROS_API_KEY not set — API is open (set it in .env before exposing to network)")
 
+COMMAND_TIMEOUT = float(os.getenv("LJROS_API_TIMEOUT", "60"))
+
+# Full command list matching supervisor._dispatch() routing table
+_COMMANDS = {
+    "daily": [
+        "/overview", "/today", "/adjust [text]", "/reply [message]",
+        "/applications", "/free", "/schedule [N]",
+    ],
+    "career": [
+        "/analyze [url or text]", "/kyn [job post]", "/followup",
+        "/stats", "/track [platform] [employer] [role] [kyn] [status]",
+    ],
+    "profile": [
+        "/me", "/projects", "/update [project] [field] [value]",
+        "/done [project] [new next task]", "/sprint",
+    ],
+    "skills": ["/skills", "/gaps"],
+    "learning": [
+        "/learn [skill]", "/roadmap [weeks]",
+        "/log (no args — save last ecommerce output)",
+        "/log [skill] [notes]", "/logshow",
+    ],
+    "planning": [
+        "/plan [hours] [energy: high|medium|low]",
+        "/next", "/morning", "/weekplan",
+    ],
+    "build": ["/idea [description]", "/ideas"],
+    "ecommerce": [
+        "/pdp [product info]", "/photoreview [url] [context]",
+        "/tiktok [product info]", "/meta [product info]",
+        "/contentcal [brief]", "/emailaudit [flow info]",
+        "/reel [brief]", "/feedback [notes]",
+    ],
+    "time": ["/toggl [desc] [Xmin]", "/hours", "/togglreport"],
+    "notes": [
+        "/apply is Telegram-only (ConversationHandler with confirm gate)",
+        "Photo upload QA is Telegram-only (send photo in chat)",
+    ],
+}
+
 
 def _get_supervisor() -> SupervisorAgent:
     global _supervisor
@@ -44,8 +85,8 @@ def _verify_key(x_api_key: str | None) -> None:
 
 
 class CommandRequest(BaseModel):
-    command: str  # e.g. "/pdp" or "/tiktok Sonny Hat" (full string) or just "today"
-    args: str = ""  # optional — split here if command already contains args
+    command: str  # "/pdp", "/tiktok Sonny Hat" (full string), or "today"
+    args: str = ""  # optional — merged with command before parsing
 
 
 class CommandResponse(BaseModel):
@@ -60,7 +101,7 @@ async def run_command(req: CommandRequest, x_api_key: str | None = Header(None))
     Style A — split:  {"command": "/pdp", "args": "Sonny Corduroy Hat Moss Green"}
     Style B — full:   {"command": "/tiktok Sonny Hat", "args": ""}
 
-    Both produce the same result.
+    Both produce the same result. Times out after 60s (configurable via LJROS_API_TIMEOUT).
     """
     _verify_key(x_api_key)
 
@@ -70,7 +111,17 @@ async def run_command(req: CommandRequest, x_api_key: str | None = Header(None))
     command = parts[0].lstrip("/").lower()
     args = parts[1] if len(parts) > 1 else ""
 
-    result = await _get_supervisor().route(command, args)
+    try:
+        result = await asyncio.wait_for(
+            _get_supervisor().route(command, args),
+            timeout=COMMAND_TIMEOUT,
+        )
+    except asyncio.TimeoutError:
+        raise HTTPException(
+            status_code=504,
+            detail=f"Command /{command} timed out after {COMMAND_TIMEOUT:.0f}s — try again or simplify the request",
+        )
+
     return CommandResponse(output=result)
 
 
@@ -79,3 +130,9 @@ async def health():
     sv = _get_supervisor()
     ai_status = sv.ai.get_status() if hasattr(sv, "ai") else "unknown"
     return {"status": "ok", "ai": ai_status}
+
+
+@app.get("/commands")
+async def list_commands():
+    """All available commands grouped by category."""
+    return _COMMANDS

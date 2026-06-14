@@ -1,7 +1,10 @@
 # iPhone Shortcuts Setup — LJR.devOS HTTP API
 
 Run any bot command from iPhone without Telegram open.
-Works on the same WiFi. No cloud services required.
+
+**Home WiFi:** works immediately with local IP.
+**Anywhere (cellular):** install Tailscale (free, 5-min setup) — then use Tailscale IP.
+Recommendation: use Tailscale IP from the start so one config works everywhere.
 
 ---
 
@@ -17,13 +20,15 @@ pip install -r requirements.txt
 python -c "import secrets; print(secrets.token_hex(16))"
 ```
 
-Copy the output (e.g. `a3f8c2d1e4b5...`). You'll need it in step 3 and in the Shortcut.
+Copy the output. You'll need it in step 3 and in every Shortcut.
 
 ## 3. Add to .env
 
 ```
 LJROS_API_KEY=<paste your key here>
 ```
+
+(Already done if you used `start.bat` — key is in `.env` as `LJROS_API_KEY`.)
 
 ## 4. Start both servers
 
@@ -43,37 +48,76 @@ uvicorn core.api_server:app --host 0.0.0.0 --port 8000
 
 Or double-click `start.bat` and choose option 1 or 2.
 
-## 5. Find your PC's local IP
+---
 
-Open Command Prompt:
+## 5. Set up Tailscale (recommended — works anywhere)
+
+Tailscale creates a private encrypted network between your PC and iPhone.
+No public ports, no router config. Free.
+
+**On PC:**
+1. Go to tailscale.com/download → download Windows client
+2. Install and sign in (Google account is easiest)
+3. After install, Tailscale appears in the system tray
+4. Get your PC's Tailscale IP:
+   ```
+   tailscale ip -4
+   ```
+   It looks like `100.x.x.x` — note this IP for step 7.
+
+**On iPhone:**
+1. App Store → search "Tailscale" → Install
+2. Sign in with the **same account** used on PC
+3. Toggle Tailscale ON (it creates a VPN connection)
+
+Both devices now share a private network. The PC's Tailscale IP
+(`100.x.x.x`) is reachable from iPhone on any network including cellular.
+
+---
+
+## 6. Find your local IP (home WiFi only)
+
+Only needed if you're skipping Tailscale:
 ```
 ipconfig
 ```
 Look for **IPv4 Address** under your active adapter (e.g. `192.168.1.105`).
-Your iPhone must be on the **same WiFi network**.
+Works only when iPhone and PC are on the same WiFi.
 
-## 6. Test from PC first
+---
 
+## 7. Test the API
+
+**From PC (confirm server is running):**
 ```
 curl -X POST http://localhost:8000/run ^
   -H "Content-Type: application/json" ^
   -H "X-API-Key: <your key>" ^
   -d "{\"command\": \"/today\", \"args\": \"\"}"
 ```
+Expected: `{"output": "...your schedule..."}`
 
-Expected response: `{"output": "...your schedule..."}`
-
-## 7. Test health from iPhone
-
-Open Safari on your iPhone (same WiFi) and visit:
+**From iPhone Safari (same WiFi):**
 ```
-http://<PC-IP>:8000/health
+http://192.168.x.x:8000/health
 ```
-Should show: `{"status": "ok", "ai": "Groq ✅ | Gemini ..."}`
+
+**From iPhone Safari (Tailscale, any network):**
+```
+http://100.x.x.x:8000/health
+```
+Both should show: `{"status": "ok", "ai": "Groq ✅ | ..."}`
+
+**See all commands:**
+```
+http://100.x.x.x:8000/commands
+```
 
 ---
 
 ## 8. Build the Shortcuts
+
+Use your **Tailscale IP** (`100.x.x.x`) in the URL — works at home and away.
 
 ### Shortcut 1 — LJR Today
 One-tap to see today's schedule.
@@ -81,7 +125,7 @@ One-tap to see today's schedule.
 1. Shortcuts app → **+** → **Add Action**
 2. Search: **Get Contents of URL**
 3. Set:
-   - URL: `http://<PC-IP>:8000/run`
+   - URL: `http://100.x.x.x:8000/run`
    - Method: **POST**
    - Headers:
      - `Content-Type` → `application/json`
@@ -90,7 +134,7 @@ One-tap to see today's schedule.
      - `command` → `/today`
      - `args` → *(leave empty)*
 4. Add action: **Get Dictionary Value** → Key: `output`
-5. Add action: **Show Notification** (or **Show Result**)
+5. Add action: **Show Result** (scrollable) or **Show Notification**
 6. Name it: **LJR Today**
 
 ---
@@ -98,7 +142,7 @@ One-tap to see today's schedule.
 ### Shortcut 2 — LJR PDP
 Type a product name, get a full 9-section Shopify PDP.
 
-Same as above, except:
+Same as Shortcut 1, except:
 - `command` → `/pdp`
 - `args` → **Ask Each Time** (prompt: "Product info")
 
@@ -107,26 +151,48 @@ Same as above, except:
 ### Shortcut 3 — LJR Reply
 Paste a message, get 3 tone variants.
 
-Same as above, except:
+Same as Shortcut 1, except:
 - `command` → `/reply`
 - `args` → **Ask Each Time** (prompt: "Paste the message")
 
 ---
 
 ### Shortcut 4 — LJR Quick (universal)
-Type any full command. Covers all 41 commands with one shortcut.
+Type any full command. One shortcut covers all 41 commands.
 
-1. Same URL/headers as above
-2. Request Body JSON:
-   - `command` → **Ask Each Time** (prompt: "Command (e.g. /tiktok Sonny Hat)")
-   - `args` → *(leave empty)*
-3. The API parses the full string automatically — you can type `/pdp Sonny Corduroy Hat` and it works.
+Same as Shortcut 1, except:
+- `command` → **Ask Each Time** (prompt: "Command (e.g. /tiktok Sonny Hat)")
+- `args` → *(leave empty)*
 
-This is the most flexible shortcut — use it when you don't want to build per-command shortcuts.
+The API parses the full string automatically — type `/pdp Sonny Corduroy Hat`
+and it works exactly like sending `/pdp Sonny Corduroy Hat` on Telegram.
 
 ---
 
-## 9. Tip: Show output as text
+## 9. Keep the PC running
+
+Remote access works **only while `python core/run_all.py` is running**.
+
+**Minimum setup:**
+- Leave the terminal window open when using Shortcuts
+- Disable sleep/hibernate on your PC while plugged in:
+  Settings → System → Power → Screen and sleep → set all to "Never" (when plugged in)
+
+**[TBD — future option] Auto-start on boot:**
+Run as a Windows Scheduled Task or NSSM service so the server starts automatically
+when the PC boots, without opening a terminal. Not needed for the LazySun trial.
+
+---
+
+## 10. Timeout note
+
+Long commands (PDPs, content calendars) call Gemini and may take 20-40s.
+The API times out at **60 seconds** by default. If a command keeps timing out,
+add `LJROS_API_TIMEOUT=90` to `.env`.
+
+---
+
+## 11. Output display tip
 
 Some outputs are long (PDPs, content calendars). To read them:
 - Use **Show Result** instead of **Show Notification** — it opens a scrollable modal
@@ -134,52 +200,19 @@ Some outputs are long (PDPs, content calendars). To read them:
 
 ---
 
-## 10. (Optional) Access outside home WiFi
-
-If you need to reach the API from cellular or a different network:
-
-**Tailscale (easiest, free):**
-1. Install Tailscale on PC and iPhone
-2. Use your Tailscale IP (`100.x.x.x`) instead of the local `192.168.x.x`
-3. No port forwarding, no router config
-
-**ngrok (temporary public URL, free tier):**
-```
-ngrok http 8000
-```
-Copy the `https://xxxx.ngrok.io` URL and use it in Shortcuts.
-Expires when you stop ngrok — not suitable for permanent use.
-
-Neither is required for same-WiFi use.
-
----
-
 ## All Available Commands
 
-| Command | What it does |
-|---------|-------------|
-| `/today` | Today's schedule |
-| `/overview` | Daily dashboard |
-| `/plan [hours] [energy]` | Session task list |
-| `/next` | Single next action |
-| `/morning` | Morning briefing |
-| `/weekplan` | Mon-Fri plan |
-| `/pdp [product info]` | 9-section Shopify PDP |
-| `/tiktok [info]` | TikTok Shop listing |
-| `/meta [info]` | Meta ads creative |
-| `/contentcal [brief]` | 4-week content calendar |
-| `/emailaudit [info]` | Email flow audit |
-| `/reel [brief]` | Short-form video script |
-| `/reply [message]` | 3 tone variants |
-| `/kyn [job post]` | KYN job score |
-| `/analyze [url or text]` | Full job analysis |
-| `/followup` | Follow-ups due today |
-| `/stats` | Application stats |
-| `/me` | Profile card |
-| `/skills` | Skills list |
-| `/gaps` | Skill gaps |
-| `/hours` | Toggl hours this week |
-| `/toggl [desc] [Xmin]` | Log time entry |
-| `/idea [desc]` | Generate Claude Code spec |
-| `/free` | Free calendar slots today |
-| `/schedule [N]` | Next N days calendar |
+| Category | Commands |
+|----------|----------|
+| Daily | `/today`, `/overview`, `/adjust [text]`, `/reply [msg]`, `/applications`, `/free`, `/schedule [N]` |
+| Career | `/analyze [url or text]`, `/kyn [post]`, `/followup`, `/stats`, `/track` |
+| Profile | `/me`, `/projects`, `/update`, `/done`, `/sprint` |
+| Skills | `/skills`, `/gaps` |
+| Learning | `/learn [skill]`, `/roadmap [weeks]`, `/log`, `/logshow` |
+| Planning | `/plan [hours] [energy]`, `/next`, `/morning`, `/weekplan` |
+| Build | `/idea [desc]`, `/ideas` |
+| Ecommerce | `/pdp`, `/tiktok`, `/meta`, `/contentcal`, `/emailaudit`, `/reel`, `/photoreview`, `/feedback` |
+| Time | `/toggl [desc] [Xmin]`, `/hours`, `/togglreport` |
+| Telegram-only | `/apply` (confirm gate), photo upload QA (send photo in chat) |
+
+Or call `GET /commands` for the live list.
