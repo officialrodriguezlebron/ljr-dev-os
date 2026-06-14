@@ -32,9 +32,9 @@ if (Test-Path $ngrokConfig) {
 }
 if (-not $ngrokHasToken) {
     Write-Host ""
-    Write-Host "╔══════════════════════════════════════════════╗"
-    Write-Host "║  NGROK AUTH TOKEN REQUIRED (one-time setup)  ║"
-    Write-Host "╚══════════════════════════════════════════════╝"
+    Write-Host "================================================"
+    Write-Host "  NGROK AUTH TOKEN REQUIRED (one-time setup)"
+    Write-Host "================================================"
     Write-Host ""
     Write-Host "1. Sign up free at https://dashboard.ngrok.com/"
     Write-Host "2. Copy your auth token"
