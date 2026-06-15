@@ -65,12 +65,19 @@ Start-Sleep -Seconds 1
 Write-Host "ttyd started (PID $($ttydProc.Id))"
 
 # ── Write Caddyfile — basic_auth proxy :7682 → :7681 ──────────────────
+# header_up Connection + Upgrade: required for Caddy to pass WebSocket
+# upgrade requests through to ttyd. Without these, the browser gets
+# 101 on the page load but WS reconnect fails ("Press Enter to Reconnect").
 @"
 :7682 {
     basic_auth /* {
         lebron $hashedPassword
     }
-    reverse_proxy localhost:7681
+    reverse_proxy localhost:7681 {
+        header_up Host {http.reverse_proxy.upstream.hostport}
+        header_up Connection {http.request.header.Connection}
+        header_up Upgrade {http.request.header.Upgrade}
+    }
 }
 "@ | Out-File -Encoding utf8 "$PID_DIR\Caddyfile"
 
