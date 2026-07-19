@@ -50,3 +50,20 @@ gtoken*.json
 
 # n8n workflows with baked-in credentials — never commit
 n8n/ready/
+
+# Python bytecode
+__pycache__/
+*.pyc
+*.pyo
+
+# Playwright session artifacts
+.playwright-mcp/
+
+# Root-level session screenshots
+*.png
+
+# LazySun catalog output (lives in va-work/output/)
+output/
+
+# One-time catalog scripts (archived to va-work/)
+scripts/_*.py
