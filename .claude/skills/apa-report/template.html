@@ -1,0 +1,259 @@
+<!-- APA 7th Report Template — LJR.devOS
+     Replace all {{PLACEHOLDER}} values before publishing.
+     Running head = short ALL-CAPS version of title, max ~50 chars.
+-->
+<title>{{TITLE}}</title>
+<style>
+:root {
+  --bg: #E8E5DF;
+  --page: #FFFFFF;
+  --ink: #1A1A16;
+  --ink-mid: #4A4A44;
+  --ink-light: #8A8A80;
+  --rule: #CCCAB8;
+  --code-bg: #F6F4EE;
+  --fig-bg: #F2F0EA;
+  --shadow: rgba(0,0,0,0.09);
+  --font: "Times New Roman", Times, serif;
+  --mono: "Courier New", Courier, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #181714;
+    --page: #222018;
+    --ink: #E4E1D6;
+    --ink-mid: #A8A59A;
+    --ink-light: #706D62;
+    --rule: #3A3830;
+    --code-bg: #1C1B18;
+    --fig-bg: #1E1D1A;
+    --shadow: rgba(0,0,0,0.40);
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #181714; --page: #222018; --ink: #E4E1D6;
+  --ink-mid: #A8A59A; --ink-light: #706D62; --rule: #3A3830;
+  --code-bg: #1C1B18; --fig-bg: #1E1D1A; --shadow: rgba(0,0,0,0.40);
+}
+:root[data-theme="light"] {
+  --bg: #E8E5DF; --page: #FFFFFF; --ink: #1A1A16;
+  --ink-mid: #4A4A44; --ink-light: #8A8A80; --rule: #CCCAB8;
+  --code-bg: #F6F4EE; --fig-bg: #F2F0EA; --shadow: rgba(0,0,0,0.09);
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font);
+  font-size: 16px;
+  line-height: 2;
+  padding: 40px 16px 80px;
+  -webkit-font-smoothing: antialiased;
+}
+
+.doc { max-width: 800px; margin: 0 auto; }
+
+.page {
+  background: var(--page);
+  box-shadow: 0 2px 16px var(--shadow);
+  padding: 80px 96px;
+  margin-bottom: 36px;
+}
+
+/* Running head */
+.rh {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--ink-light);
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--rule);
+  margin-bottom: 48px;
+}
+
+/* Title page */
+.title-page { min-height: 640px; }
+.title-center {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 72px 0 48px;
+}
+.doc-title {
+  font-size: 20px;
+  font-weight: bold;
+  line-height: 1.5;
+  margin-bottom: 60px;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+.author-block { line-height: 2; }
+.author-block p { font-size: 16px; text-indent: 0; }
+.author-block .gap { margin-top: 16px; }
+
+/* APA heading levels */
+h1 { font-size: 16px; font-weight: bold; text-align: center; line-height: 2; font-family: var(--font); }
+h2 { font-size: 16px; font-weight: bold; text-align: left; line-height: 2; font-family: var(--font); }
+h3 { font-size: 16px; font-weight: bold; font-style: italic; text-align: left; line-height: 2; font-family: var(--font); }
+
+/* Body */
+p { text-indent: 0.5in; line-height: 2; font-family: var(--font); }
+.no-indent { text-indent: 0; }
+h1 + p, h2 + p, h3 + p, .figure + p { text-indent: 0; }
+
+ol, ul { padding-left: 0.75in; margin: 0; }
+li { line-height: 2; }
+
+code { font-family: var(--mono); font-size: 14px; }
+
+/* Figures */
+.figure { margin: 24px 0 32px; }
+.fig-label { display: block; font-weight: bold; font-size: 16px; line-height: 2; }
+.fig-title { display: block; font-style: italic; font-size: 16px; line-height: 1.6; margin-bottom: 10px; }
+.fig-img {
+  width: 100%;
+  min-height: 180px;
+  background: var(--fig-bg);
+  border: 1.5px dashed var(--rule);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--ink-light);
+  font-style: italic;
+  font-size: 13px;
+  letter-spacing: 0.02em;
+  margin-bottom: 10px;
+}
+.fig-img img { width: 100%; height: auto; display: block; }
+.fig-note { font-size: 16px; line-height: 2; text-indent: 0; color: var(--ink-mid); }
+.fig-note strong { font-weight: bold; color: var(--ink); }
+
+/* Code blocks */
+pre {
+  background: var(--code-bg);
+  border-left: 3px solid var(--rule);
+  padding: 18px 22px;
+  font-family: var(--mono);
+  font-size: 13px;
+  line-height: 1.75;
+  margin: 8px 0 24px;
+  overflow-x: auto;
+  white-space: pre;
+}
+
+hr { border: none; border-top: 1px solid var(--rule); margin: 0; }
+
+/* Appendix */
+.app-label { font-weight: bold; text-align: center; font-size: 16px; line-height: 2; font-family: var(--font); }
+.app-title { font-weight: bold; text-align: center; font-size: 16px; line-height: 2; font-family: var(--font); margin-bottom: 8px; }
+
+@media (max-width: 680px) {
+  .page { padding: 40px 24px; }
+  .rh { font-size: 10px; }
+}
+</style>
+
+<div class="doc">
+
+  <!-- ─── TITLE PAGE ─── -->
+  <div class="page title-page">
+    <div class="rh">
+      <span>{{RUNNING_HEAD}}</span>
+      <span>1</span>
+    </div>
+    <div class="title-center">
+      <p class="doc-title">{{TITLE}}</p>
+      <div class="author-block">
+        <p>Lebron James D.G. Rodriguez</p>
+        <p>{{ROLE}}</p>
+        <p>{{CLIENT_ORG}}</p>
+        <p class="gap">&nbsp;</p>
+        <p>Submitted to: {{SUBMITTED_TO}}</p>
+        <p>{{DATE}}</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── SECTION I ─── -->
+  <!-- Copy this page block for each major section. Update page number. -->
+  <div class="page">
+    <div class="rh">
+      <span>{{RUNNING_HEAD}}</span>
+      <span>2</span>
+    </div>
+
+    <h1>I. {{SECTION_1_TITLE}}</h1>
+
+    <p>{{OPENING_PARAGRAPH}}</p>
+
+    <h2>{{SUBSECTION_TITLE}}</h2>
+
+    <p>{{SUBSECTION_CONTENT}}</p>
+
+    <!-- Figure example — duplicate as needed, increment Figure N -->
+    <div class="figure">
+      <span class="fig-label">Figure 1</span>
+      <span class="fig-title">{{FIGURE_TITLE}}</span>
+      <div class="fig-img">
+        <!-- To embed a real image: replace the div content with:
+             <img src="data:image/png;base64,BASE64_HERE" alt="{{FIGURE_TITLE}}">
+             Or keep the placeholder text for draft: -->
+        [ Insert: filename.png — 900–1200 px wide ]
+      </div>
+      <p class="fig-note"><strong>Note.</strong> {{FIGURE_NOTE}}</p>
+    </div>
+
+  </div>
+
+  <!-- ─── SECTION II ─── -->
+  <div class="page">
+    <div class="rh">
+      <span>{{RUNNING_HEAD}}</span>
+      <span>3</span>
+    </div>
+
+    <h1>II. {{SECTION_2_TITLE}}</h1>
+
+    <p>{{SECTION_2_OPENING}}</p>
+
+    <h2>{{SUBSECTION_2_TITLE}}</h2>
+
+    <p>{{SUBSECTION_2_CONTENT}}</p>
+
+    <!-- Level 3 heading example -->
+    <h3>{{LEVEL_3_HEADING}}</h3>
+
+    <p>{{LEVEL_3_CONTENT}}</p>
+
+  </div>
+
+  <!-- ─── APPENDIX (if needed) ─── -->
+  <div class="page">
+    <div class="rh">
+      <span>{{RUNNING_HEAD}}</span>
+      <span>4</span>
+    </div>
+
+    <p class="app-label">Appendix</p>
+    <p class="app-title">{{APPENDIX_TITLE}}</p>
+
+    <p>{{APPENDIX_INTRO}}</p>
+
+    <h2>A1. {{APPENDIX_SECTION_1}}</h2>
+
+<pre>{{CODE_BLOCK_1}}</pre>
+
+    <h2>A2. {{APPENDIX_SECTION_2}}</h2>
+
+<pre>{{CODE_BLOCK_2}}</pre>
+
+  </div>
+
+</div>

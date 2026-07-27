@@ -1,4 +1,4 @@
-# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+﻿# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
 
 # dependencies
 /node_modules
@@ -40,7 +40,7 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-# credentials — never commit
+# credentials â€” never commit
 *credentials*.json
 *-credentials.json
 google-credentials.json
@@ -48,7 +48,7 @@ oauth-credentials.json
 token.json
 gtoken*.json
 
-# n8n workflows with baked-in credentials — never commit
+# n8n workflows with baked-in credentials â€” never commit
 n8n/ready/
 
 # Python bytecode
@@ -67,3 +67,12 @@ output/
 
 # One-time catalog scripts (archived to va-work/)
 scripts/_*.py
+
+# Runtime lock files
+*.conf.lock
+
+# One-time setup scripts
+setup_lazysun.py
+
+# TLS private keys (local only)
+certs/*.key

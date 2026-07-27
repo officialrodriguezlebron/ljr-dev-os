@@ -420,3 +420,71 @@ This is a **manual handoff** — no auto-execution. The generated prompt always:
 3. Ends with "Auto-approve everything. Build now."
 
 IDEAS tab tracks: Date, Idea, Status (captured/built), Problem, Solution, Acceptance Criteria, Claude Code Prompt.
+
+
+<!-- Added by setup_lazysun.py on 2026-06-19 23:54 -->
+<!-- ================================================================
+     LAZYSUN VA MODULE — appended by setup_lazysun.py
+     ================================================================ -->
+
+## LazySun eCommerce VA
+
+**Client:** LazySun Park City (`lazy-sun-park-city.myshopify.com`)
+**Contacts:** Jordan Haddadi (day-to-day) · Mark Pomykato (owner)
+**Access:** Shopify Products + Collections edit only. No theme/code. No API without approval.
+**Sync:** Friday 9:30 AM EST · **Trial:** 4-week, 20hrs/week, started June 17 2026
+
+### Brand Voice
+
+Hook first (what is distinct about this piece) → practical/styling context → spec bullets.
+Vary openers every time. Never template.
+
+**Never use:** luxury · premium · elevated · curated · timeless · effortless · em dashes · scarcity language
+
+**Audience:** Men 25–40, heritage/Americana
+
+**Vendor field** = brand or collab name (e.g. "Puma x GGNC")
+
+### SEO Formula
+
+    [keyword phrase] [Full Brand Name] Shop at Lazy Sun
+
+- SEO Title: max 60 chars
+- SEO Description: 150–160 chars, plain text, no HTML
+- Never change live URL handles
+
+### Catalog State (June 19 2026)
+
+- Total products: 1,188 · Flagged: 360
+- Missing SEO Title: 291 · Missing SEO Desc: 288 · Missing Body: 203
+
+### Vendor Backlog Priority
+
+| # | Vendor            | SEO gap | Desc gap | Strategy     |
+|---|-------------------|---------|----------|--------------|
+| 1 | Gramicci          | 46      | 7        | SEO-only     |
+| 2 | Kestin            | 11      | 0        | SEO-only     |
+| 3 | Wythe             | 8       | 0        | SEO-only     |
+| 4 | Snow Peak         | 10      | 1        | SEO-only     |
+| 5 | Deep Cuts Vintage | 68      | 75       | Full PDP     |
+| 6 | Lazy Sun          | 27      | 67       | Full PDP     |
+| 7 | Lazy Sun Vintage  | 25      | 20       | Full PDP     |
+| 8 | Vintage MLB       | 21      | 10       | Full PDP     |
+
+### Slash Commands
+
+`/lazysun-audit`   → run gap audit on products_export_1.csv, print vendor summary
+`/lazysun-seo`     → generate SEO title + meta desc for a vendor batch
+`/lazysun-pdp`     → generate full body copy + SEO for a vendor batch
+`/lazysun-status`  → print backlog progress
+
+### Working Files
+
+| File | Location |
+|------|----------|
+| Full catalog export | `output/products_export_1.csv` |
+| Flagged products | `output/audit_gaps.csv` |
+| Generated SEO (review) | `output/proposed_seo_[vendor].csv` |
+| Generated PDP (review) | `output/proposed_pdp_[vendor].csv` |
+
+<!-- END LAZYSUN VA MODULE -->

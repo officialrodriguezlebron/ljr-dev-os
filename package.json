@@ -22,5 +22,22 @@
     "eslint-config-next": "16.2.7",
     "tailwindcss": "^4",
     "typescript": "^5"
-  }
+  },
+  "description": "Personal AI operating system for Lebron James DG. Rodriguez.",
+  "main": "index.js",
+  "directories": {
+    "doc": "docs"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/officialrodriguezlebron/ljr-dev-os.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/officialrodriguezlebron/ljr-dev-os/issues"
+  },
+  "homepage": "https://github.com/officialrodriguezlebron/ljr-dev-os#readme"
 }

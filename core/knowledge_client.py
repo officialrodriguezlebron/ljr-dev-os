@@ -7,6 +7,7 @@ logger = logging.getLogger(__name__)
 
 _VA_WORK_PATH = Path(os.getenv("VA_WORK_PATH", r"C:\Users\HomePC\va-work"))
 _KNOWLEDGE_PATH = _VA_WORK_PATH / "knowledge"
+_AGENTS_PATH    = _VA_WORK_PATH / ".agents"
 
 
 def _read(path: Path) -> str:
@@ -18,6 +19,20 @@ def _read(path: Path) -> str:
 def build_knowledge_context() -> str:
     """Return combined knowledge base string for agent system prompts."""
     parts = []
+
+    # Copywriting framework (Molongski Method + PAS/HOOK/SEO rules)
+    framework = _read(_AGENTS_PATH / "copywriting-framework.md")
+    if framework:
+        # Inject the core rules sections only — skip the master prompts block to save tokens
+        lines = framework.splitlines()
+        core_lines = []
+        in_master_prompts = False
+        for line in lines:
+            if line.startswith("## MASTER PROMPTS"):
+                in_master_prompts = True
+            if not in_master_prompts:
+                core_lines.append(line)
+        parts.append("## Copywriting Framework\n" + "\n".join(core_lines).strip())
 
     feedback = _read(_KNOWLEDGE_PATH / "jordan-feedback.md")
     if feedback and "<!--" not in feedback.splitlines()[-1]:
